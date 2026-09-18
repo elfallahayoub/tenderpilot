@@ -1019,3 +1019,109 @@ body {
   line-height: 1.45;
   color: var(--discret);
 }
+
+/* --- memoire technique --- */
+
+.memoire__barre {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.bouton-principal,
+.bouton-secondaire {
+  font: inherit;
+  font-size: 14px;
+  padding: 8px 16px;
+  border-radius: 6px;
+  cursor: pointer;
+  text-decoration: none;
+  display: inline-block;
+}
+
+.bouton-principal {
+  border: 1px solid var(--texte);
+  background: var(--texte);
+  color: var(--carte);
+  font-weight: 600;
+}
+
+.bouton-principal:disabled {
+  background: var(--gris);
+  border-color: var(--gris);
+  cursor: default;
+}
+
+.bouton-secondaire {
+  border: 1px solid var(--trait);
+  background: var(--carte);
+  color: var(--texte);
+}
+
+.bouton-secondaire:hover {
+  border-color: var(--discret);
+}
+
+.section {
+  background: var(--carte);
+  border: 1px solid var(--trait);
+  border-left: 3px solid var(--trait);
+  border-radius: 6px;
+  padding: 14px 16px;
+  margin-bottom: 10px;
+}
+
+/* Une section non sourcee se voit : elle n est jamais masquee. */
+.section--a-completer {
+  border-left-color: var(--ambre);
+  background: #fffdf7;
+}
+
+.section__entete {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.section__titre {
+  margin: 0;
+  font-size: 15px;
+}
+
+.section__marque {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--ambre);
+  border: 1px solid var(--ambre);
+  border-radius: 9px;
+  padding: 1px 7px;
+}
+
+.section__reprise {
+  font-size: 12px;
+  color: var(--discret);
+}
+
+.section__motif {
+  margin: 0;
+  font-size: 13px;
+  color: var(--ambre);
+}
+
+.section__texte {
+  margin: 0 0 10px;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.section__references {
+  margin: 8px 0 0;
+  font-size: 12px;
+  color: var(--discret);
+  font-style: italic;
+}

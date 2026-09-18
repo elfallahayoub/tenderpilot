@@ -94,6 +94,41 @@ export async function listerExigences(documentId: string): Promise<ReponseExigen
   return lireJson<ReponseExigences>(`/documents/${documentId}/exigences`);
 }
 
+export type SectionMemoire = {
+  ordre: number;
+  titre: string;
+  contenu: string;
+  statut: "redigee" | "a_completer";
+  motif: string | null;
+  references_citees: string[];
+  modele: string | null;
+  tokens: number | null;
+  tentatives: number;
+};
+
+export type ReponseMemoire = {
+  statutMemoire: "absent" | "en_cours" | "termine" | "echec";
+  motifMemoire: string | null;
+  sections: SectionMemoire[];
+};
+
+export async function lireMemoire(documentId: string): Promise<ReponseMemoire> {
+  return lireJson<ReponseMemoire>(`/documents/${documentId}/memoire`);
+}
+
+/** Declenche la redaction. Sept appels au modele, donc jamais automatique. */
+export async function genererMemoire(documentId: string): Promise<void> {
+  const reponse = await fetch(`${URL_API}/documents/${documentId}/memoire`, { method: "POST" });
+  if (!reponse.ok) {
+    const corps = (await reponse.json().catch(() => null)) as { erreur?: unknown } | null;
+    throw new Error(corps?.erreur ? String(corps.erreur) : `la generation a echoue (${reponse.status})`);
+  }
+}
+
+export function urlDocx(documentId: string): string {
+  return `${URL_API}/documents/${documentId}/memoire.docx`;
+}
+
 export type ReponseJournal = {
   evenements: EvenementJournal[];
   recapitulatif: Recapitulatif;

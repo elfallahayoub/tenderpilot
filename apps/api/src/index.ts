@@ -5,6 +5,7 @@ import { routeSante } from "./routes/health.js";
 import { routesDocuments } from "./routes/documents.js";
 import { routesExigences } from "./routes/exigences.js";
 import { routesJournal } from "./routes/journal.js";
+import { routesMemoire } from "./routes/memoire.js";
 import { fermerPostgres } from "./shared/db.js";
 import { fermerRedis } from "./redis.js";
 import { fermerFile } from "./queue.js";
@@ -30,6 +31,7 @@ await app.register(routeSante);
 await app.register(routesDocuments);
 await app.register(routesExigences);
 await app.register(routesJournal);
+await app.register(routesMemoire);
 
 app.get("/", async () => ({
   service: "tenderpilot-api",

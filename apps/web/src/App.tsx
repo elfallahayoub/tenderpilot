@@ -5,9 +5,10 @@ import { ListeDocuments } from "./ListeDocuments";
 import { VueDocument } from "./VueDocument";
 import { Matrice } from "./Matrice";
 import { Journal } from "./Journal";
+import { Memoire } from "./Memoire";
 import { enCours, type Document, type Sante } from "./types";
 
-type Onglet = "matrice" | "pages";
+type Onglet = "matrice" | "memoire" | "pages";
 
 /** Sondage rapproche tant qu'un document bouge, repos ensuite. */
 const PERIODE_ACTIVE_MS = 2000;
@@ -113,17 +114,22 @@ export function App() {
                 </button>
                 <button
                   type="button"
+                  className={onglet === "memoire" ? "onglet onglet--actif" : "onglet"}
+                  onClick={() => setOnglet("memoire")}
+                >
+                  Memoire technique
+                </button>
+                <button
+                  type="button"
                   className={onglet === "pages" ? "onglet onglet--actif" : "onglet"}
                   onClick={() => setOnglet("pages")}
                 >
                   Pages du document
                 </button>
               </nav>
-              {onglet === "matrice" ? (
-                <Matrice document={documentSelectionne} />
-              ) : (
-                <VueDocument document={documentSelectionne} />
-              )}
+              {onglet === "matrice" && <Matrice document={documentSelectionne} />}
+              {onglet === "memoire" && <Memoire document={documentSelectionne} />}
+              {onglet === "pages" && <VueDocument document={documentSelectionne} />}
             </>
           ) : (
             <p className="vide">Choisissez un avis pour voir sa matrice de conformite.</p>

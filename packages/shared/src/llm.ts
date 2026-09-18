@@ -365,6 +365,78 @@ async function ecrireCache(cle: string, contenu: string): Promise<void> {
   }
 }
 
+// --- Embeddings -------------------------------------------------------------
+
+/**
+ * Dimension imposee par le CLAUDE.md, et passee au service : embedder-small-3
+ * accepte le parametre `dimensions` et rend exactement ce nombre.
+ */
+export const DIMENSIONS_EMBEDDING = Number(process.env.EMBEDDING_DIMENSIONS ?? 512);
+
+/**
+ * Vectorisation d'un texte.
+ *
+ * ATTENTION au routage : l'embedder n'est PAS servi par le deploiement Azure,
+ * qui repond 404 sur ce modele. Il est servi par la surface v1 de LLM_URL,
+ * avec un jeton porteur et le modele dans le corps. Verifie, et documente dans
+ * le CLAUDE.md section 5.
+ *
+ * Passe par ce module comme tout appel a un service : le routage reste
+ * centralise, et l'appel est journalise quand un contexte est fourni.
+ */
+export async function calculerEmbedding(
+  texte: string,
+  contexte?: { runId: string; agent: string; etape: string },
+): Promise<number[]> {
+  const modele = exiger("EMBEDDING_MODEL");
+  const debut = performance.now();
+
+  const reponse = await fetch(`${exiger("LLM_URL")}/embeddings`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${exiger("LLM_API_KEY")}`,
+    },
+    body: JSON.stringify({ model: modele, input: texte, dimensions: DIMENSIONS_EMBEDDING }),
+  });
+
+  if (!reponse.ok) {
+    throw new Error(`embeddings HTTP ${reponse.status} : ${(await reponse.text()).slice(0, 200)}`);
+  }
+
+  const json = (await reponse.json()) as {
+    data?: { embedding?: number[] }[];
+    usage?: { total_tokens?: number };
+  };
+  const vecteur = json.data?.[0]?.embedding;
+
+  if (!Array.isArray(vecteur) || vecteur.length !== DIMENSIONS_EMBEDDING) {
+    throw new Error(
+      `embedding de dimension ${vecteur?.length ?? 0}, ${DIMENSIONS_EMBEDDING} attendue`,
+    );
+  }
+
+  if (contexte) {
+    await journaliser({
+      runId: contexte.runId,
+      agent: contexte.agent,
+      etape: contexte.etape,
+      modele,
+      tokens: json.usage?.total_tokens ?? 0,
+      dureeMs: Math.round(performance.now() - debut),
+      statut: "succes",
+      detail: `vecteur de ${vecteur.length} dimensions`,
+    });
+  }
+
+  return vecteur;
+}
+
+/** Litteral Postgres d'un vecteur pgvector. */
+export function versVecteurSql(vecteur: number[]): string {
+  return `[${vecteur.join(",")}]`;
+}
+
 export async function fermerLlm(): Promise<void> {
   await redis.quit();
 }

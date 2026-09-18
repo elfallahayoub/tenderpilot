@@ -3,7 +3,14 @@ import IORedis from "ioredis";
 import { traiterIngestion, type TravailIngestion } from "./ingestion.js";
 import { traiterExtraction, type TravailExtraction } from "./extracteur.js";
 import { traiterQualification, type TravailQualification } from "./qualifier.js";
-import { FILE_EXTRACTION, FILE_INGESTION, FILE_QUALIFICATION, fermerFiles } from "./files.js";
+import { traiterRedaction, type TravailRedaction } from "./writer.js";
+import {
+  FILE_EXTRACTION,
+  FILE_INGESTION,
+  FILE_QUALIFICATION,
+  FILE_REDACTION,
+  fermerFiles,
+} from "./files.js";
 import { fermerCache } from "./cache.js";
 import { fermerPostgres } from "./shared/db.js";
 import { fermerLlm } from "./shared/llm.js";
@@ -58,10 +65,20 @@ const qualifieur = new Worker<TravailQualification>(
   { connection, concurrency: 1 },
 );
 
+const redacteur = new Worker<TravailRedaction>(
+  FILE_REDACTION,
+  async (job) => {
+    console.log(`[writer] travail ${job.id} recu`);
+    return traiterRedaction(job);
+  },
+  { connection, concurrency: 1 },
+);
+
 for (const [nom, worker] of [
   ["ingestor", ingesteur],
   ["extractor", extracteur],
   ["qualifier", qualifieur],
+  ["writer", redacteur],
 ] as const) {
   worker.on("ready", () => console.log(`[${nom}] pret`));
   worker.on("completed", (job, resultat) =>
@@ -79,7 +96,12 @@ for (const [nom, worker] of [
 async function arreter(signal: string): Promise<void> {
   console.log(`[worker] signal ${signal} recu, arret en cours`);
   try {
-    await Promise.allSettled([ingesteur.close(), extracteur.close(), qualifieur.close()]);
+    await Promise.allSettled([
+      ingesteur.close(),
+      extracteur.close(),
+      qualifieur.close(),
+      redacteur.close(),
+    ]);
     await Promise.allSettled([
       connection.quit(),
       fermerFiles(),

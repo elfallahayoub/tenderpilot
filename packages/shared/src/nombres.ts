@@ -81,6 +81,25 @@ const MOTS_IGNORES = new Set([
   "clos",
 ]);
 
+/**
+ * Ce jeton est-il un mot-nombre francais ?
+ *
+ * "un" et "une" en sont volontairement exclus : ce sont des articles bien plus
+ * souvent que des quantites, et les compter ferait de "un comite de pilotage"
+ * un dénombrement. Ils restent acceptes a l'interieur d'une suite, pour
+ * "vingt et un".
+ */
+export function estMotNombre(mot: string, dansUneSuite = false): boolean {
+  const jeton = simplifier(mot);
+  if (jeton.length === 0) return false;
+  if (jeton === "un" || jeton === "une" || jeton === "et") return dansUneSuite;
+  if (jeton in UNITES && jeton !== "un") return true;
+  if (jeton in DIZAINES) return true;
+  return ["cent", "cents", "mille", "milles", "million", "millions", "milliard", "milliards"].includes(
+    jeton,
+  );
+}
+
 /** Retire accents et ponctuation decorative, met en minuscules. */
 function simplifier(texte: string): string {
   return texte

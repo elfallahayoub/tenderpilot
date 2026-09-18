@@ -88,9 +88,14 @@ centralisé dans un seul module `src/llm.ts`, et jamais improvisé dans le code.
 |---|---|---|
 | Orchestration, planification, décisions à plusieurs étapes, arbitrages ambigus | **gpt-5.5** | `LLM_URL`, `LLM_API_KEY`, `LLM_MODEL` |
 | Extraction, classification, résumé, reformulation, sortie JSON, appels d'outils répétitifs | **gpt-4.1** | `AZURE_OPENAI_ENDPOINT`, `AZURE_OPENAI_API_KEY`, `AZURE_OPENAI_API_VERSION`, `AZURE_OPENAI_DEPLOYMENT_NAME` |
-| Indexation et recherche sémantique des références | **embedder-small-3**, 512 dimensions | `EMBEDDING_MODEL`, `EMBEDDING_DIMENSIONS` |
+| Indexation et recherche sémantique des références | **embedder-small-3**, 512 dimensions | `EMBEDDING_MODEL`, `EMBEDDING_DIMENSIONS`, servi par `LLM_URL` et `LLM_API_KEY` |
 
 Conséquences dans le code :
+
+- **L'embedder n'est pas servi par le déploiement Azure.** `AZURE_OPENAI_ENDPOINT`
+  répond 404 sur `embedder-small-3` : les embeddings passent par la surface v1
+  de `LLM_URL`, avec un jeton porteur, le modèle dans le corps et le paramètre
+  `dimensions` à 512. Vérifié, et documenté dans le README.
 
 - Extractor, Writer et Compliance tournent sur **gpt-4.1**. Seuls
   l'Orchestrator et le Qualifier en cas ambigu utilisent **gpt-5.5**.
@@ -222,6 +227,29 @@ Quand l'humain corrige une section (EX-06), la correction est stockée et
 **réinjectée dans le contexte des sections suivantes et des traitements
 suivants**. C'est un scénario de test explicite du cahier des charges : « la
 correction est conservée et réutilisée ».
+
+### 9.4. Aucun chiffre inventé, du début à la fin
+
+Généralisation de la règle 8 à toute la chaîne, y compris au Writer. Le
+principe est unique et se vérifie d'une seule manière : **tout nombre écrit en
+chiffres, où qu'il apparaisse dans le système, doit se trouver dans la matière
+fournie.**
+
+- L'Extractor recopie les valeurs telles qu'elles figurent dans le document, et
+  `normaliserNombre` les convertit.
+- Le moteur de règles produit les preuves chiffrées, à partir du profil lu en
+  base par appel d'outil.
+- Le Writer n'écrit aucun chiffre absent de sa matière. Les dénombrements se
+  rédigent en toutes lettres, « quatre phases » ; les chiffres sont réservés à
+  la recopie d'une valeur fournie. Une fonction pure relève tous les nombres de
+  la section produite et la rejette si l'un d'eux est introuvable dans la
+  matière.
+- Le Reporter recopie, il ne recalcule jamais.
+
+Un seul mécanisme couvre ainsi les montants, les dates, les seuils et les
+valeurs du verdict. Une section rejetée est régénérée une fois, puis marquée
+« à compléter par l'humain » : un mémoire fluide contenant un chiffre inventé
+vaut moins qu'un mémoire qui déclare ses trous.
 
 ## 10. Les données
 

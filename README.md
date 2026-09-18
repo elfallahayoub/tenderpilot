@@ -67,7 +67,7 @@ du dossier et la détection des conditions illisibles.
 | Ingestor | Lit le PDF page par page, OCRise les scans, déclare ce qu'il n'a pas lu. | aucun | fait |
 | Extractor | Transforme chaque page en exigences typées et sourcées. | gpt-4.1 | fait |
 | Qualifier | Évalue chaque exigence contre le profil, prépare le verdict. | gpt-4.1, gpt-5.5 si ambigu | fait |
-| Writer | Rédige le mémoire en citant les références réelles. | gpt-4.1 | à venir |
+| Writer | Rédige le mémoire section par section en citant les références réelles. | gpt-4.1 | fait |
 | Compliance | Relit contre la checklist administrative. | gpt-4.1 | à venir |
 | Orchestrator | Planifie, relance, escalade à l'humain. | gpt-5.5 | à venir |
 
@@ -193,9 +193,39 @@ page 3, qui n'a ni en-tête ni grille autour d'elle.
 
 ## Décisions de conception
 
-Sept choix demandent une explication, parce qu'ils ne vont pas de soi et qu'on
+Huit choix demandent une explication, parce qu'ils ne vont pas de soi et qu'on
 peut légitimement en attendre l'inverse. Plusieurs viennent d'une erreur
 constatée en exécutant le système sur les dix avis, pas d'une intuition.
+
+### Aucun nombre inventé, ni en chiffres ni en toutes lettres
+
+La règle 8 du projet interdit au modèle de produire un nombre. Le Writer la
+généralise à toute la chaîne : **tout nombre écrit dans le mémoire, quelle que
+soit sa forme, doit se trouver dans la matière fournie à la section.** Une
+fonction pure relève les nombres de la section produite et la rejette si l'un
+d'eux est introuvable. La section est régénérée une fois, puis marquée « à
+compléter par l'humain », avec son motif, et apparaît ainsi marquée dans le
+DOCX.
+
+La première version de ce contrôle ne regardait que les chiffres. Elle a
+laissé passer deux choses sur une génération réelle, et c'est en lisant la
+sortie que je les ai vues :
+
+> « La référence REF-02 [...] exécutée en **deux mille vingt-deux** »
+>
+> « **Deux** de ces références sont appuyées par des attestations de bonne
+> exécution. »
+
+La première est anodine, la seconde est une affirmation chiffrée que rien ne
+fondait : le décompte des attestations n'était pas dans la matière. Le modèle,
+à qui l'on demandait d'écrire les dénombrements en lettres, avait trouvé là une
+sortie parfaitement légale et parfaitement fausse.
+
+Le contrôle couvre désormais les deux formes, et la consigne a changé de sens :
+une valeur fournie se recopie **en chiffres**, et aucun dénombrement n'est
+introduit. La vérification n'a pas été assouplie pour améliorer le résultat,
+elle a été durcie parce qu'elle était trouée. La matière a été complétée en
+conséquence : chaque référence indique désormais si elle porte une attestation.
 
 ### Un no-go est solide sur un document incomplet, un go ne l'est pas
 
@@ -347,9 +377,14 @@ un service de modèle, ce qui rend le routage démontrable plutôt que déclarat
 |---|---|---|
 | extraction, classification, résumé, rédaction | gpt-4.1 | Volume élevé, tâche cadrée, sortie JSON contrainte. |
 | orchestration, arbitrage | gpt-5.5 | Peu d'appels, décisions à plusieurs étapes, cas ambigus. |
+| indexation, recherche sémantique | embedder-small-3 | 512 dimensions, calculés une seule fois au seed. |
 
 Un agent déclare ce qu'il fait, jamais quel modèle il veut. Le choix est une
 décision d'architecture, centralisée, pas une décision locale.
+
+**Attention au point de terminaison de l'embedder.** Il n'est pas servi par le
+déploiement Azure, qui répond 404 sur `embedder-small-3`, mais par la surface v1
+de `LLM_URL`, avec un jeton porteur et le modèle dans le corps de la requête.
 
 Le module garantit aussi ce que le service ne garantit pas. La forme de la
 sortie est imposée au service par un JSON Schema en mode strict. Le contenu est
