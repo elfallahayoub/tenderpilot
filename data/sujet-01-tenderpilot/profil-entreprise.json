@@ -1,0 +1,503 @@
+{
+  "raison_sociale": "ATLAS DIGITAL SERVICES SARL",
+  "forme_juridique": "SARL au capital de 3 000 000 MAD",
+  "ice": "001987654000073",
+  "rc": "Casablanca 345 981",
+  "if_fiscal": "40218765",
+  "cnss": "9876543",
+  "siege": "Casablanca",
+  "creation": 2014,
+  "effectif": 84,
+  "chiffre_affaires_ht_mad": {
+    "2023": 41200000,
+    "2024": 52800000,
+    "2025": 61500000
+  },
+  "certifications": [
+    "ISO 9001:2015",
+    "ISO 27001:2022",
+    "Qualiopi"
+  ],
+  "attestations_disponibles": [
+    "Attestation fiscale",
+    "Attestation CNSS",
+    "Certificat du registre de commerce",
+    "Assurance responsabilité civile professionnelle",
+    "Déclaration sur l'honneur"
+  ],
+  "secteurs_couverts": [
+    "santé",
+    "éducation",
+    "transport",
+    "énergie",
+    "finances publiques",
+    "digital"
+  ],
+  "references": [
+    {
+      "id": "REF-01",
+      "client": "Agence Urbaine de Casablanca",
+      "secteur": "santé",
+      "objet": "L'audit et la sécurisation du système d'information",
+      "montant_ht_mad": 5176000,
+      "annee_debut": 2021,
+      "duree_mois": 12,
+      "attestation_bonne_execution": true
+    },
+    {
+      "id": "REF-02",
+      "client": "Agence Nationale de Réglementation des Télécommunications",
+      "secteur": "éducation",
+      "objet": "La refonte du portail citoyen et de ses services en ligne",
+      "montant_ht_mad": 5648000,
+      "annee_debut": 2022,
+      "duree_mois": 6,
+      "attestation_bonne_execution": true
+    },
+    {
+      "id": "REF-03",
+      "client": "Office National des Aéroports",
+      "secteur": "transport",
+      "objet": "La refonte du portail citoyen et de ses services en ligne",
+      "montant_ht_mad": 6424000,
+      "annee_debut": 2023,
+      "duree_mois": 8,
+      "attestation_bonne_execution": true
+    },
+    {
+      "id": "REF-04",
+      "client": "Ministère de l'Éducation Nationale",
+      "secteur": "énergie",
+      "objet": "L'accompagnement à la mise en conformité à la protection des données",
+      "montant_ht_mad": 5295000,
+      "annee_debut": 2024,
+      "duree_mois": 8,
+      "attestation_bonne_execution": true
+    },
+    {
+      "id": "REF-05",
+      "client": "Agence Nationale des Ports",
+      "secteur": "finances publiques",
+      "objet": "L'audit et la sécurisation du système d'information",
+      "montant_ht_mad": 4511000,
+      "annee_debut": 2022,
+      "duree_mois": 12,
+      "attestation_bonne_execution": true
+    },
+    {
+      "id": "REF-06",
+      "client": "Caisse Nationale de Sécurité Sociale",
+      "secteur": "digital",
+      "objet": "L'accompagnement à la mise en conformité à la protection des données",
+      "montant_ht_mad": 1140000,
+      "annee_debut": 2023,
+      "duree_mois": 8,
+      "attestation_bonne_execution": false
+    },
+    {
+      "id": "REF-07",
+      "client": "Agence de Développement du Digital",
+      "secteur": "santé",
+      "objet": "La mise en place d'un système d'information décisionnel",
+      "montant_ht_mad": 871000,
+      "annee_debut": 2024,
+      "duree_mois": 18,
+      "attestation_bonne_execution": false
+    },
+    {
+      "id": "REF-08",
+      "client": "Agence Nationale des Ports",
+      "secteur": "éducation",
+      "objet": "La mise en œuvre d'une plateforme d'échange et d'interopérabilité",
+      "montant_ht_mad": 1749000,
+      "annee_debut": 2024,
+      "duree_mois": 18,
+      "attestation_bonne_execution": false
+    },
+    {
+      "id": "REF-09",
+      "client": "Ministère de la Santé et de la Protection sociale",
+      "secteur": "transport",
+      "objet": "Le développement d'une application mobile de services aux usagers",
+      "montant_ht_mad": 1517000,
+      "annee_debut": 2022,
+      "duree_mois": 8,
+      "attestation_bonne_execution": true
+    },
+    {
+      "id": "REF-10",
+      "client": "Agence de Développement du Digital",
+      "secteur": "énergie",
+      "objet": "La mise en place d'une plateforme de dématérialisation des marchés",
+      "montant_ht_mad": 2592000,
+      "annee_debut": 2024,
+      "duree_mois": 24,
+      "attestation_bonne_execution": true
+    },
+    {
+      "id": "REF-11",
+      "client": "Ministère de la Santé et de la Protection sociale",
+      "secteur": "finances publiques",
+      "objet": "La mise en place d'un système d'information décisionnel",
+      "montant_ht_mad": 4381000,
+      "annee_debut": 2022,
+      "duree_mois": 12,
+      "attestation_bonne_execution": true
+    },
+    {
+      "id": "REF-12",
+      "client": "Agence de Développement du Digital",
+      "secteur": "digital",
+      "objet": "La refonte du portail citoyen et de ses services en ligne",
+      "montant_ht_mad": 484000,
+      "annee_debut": 2022,
+      "duree_mois": 6,
+      "attestation_bonne_execution": true
+    },
+    {
+      "id": "REF-13",
+      "client": "Agence Urbaine de Casablanca",
+      "secteur": "santé",
+      "objet": "L'acquisition et l'intégration d'une solution de gestion électronique de documents",
+      "montant_ht_mad": 524000,
+      "annee_debut": 2022,
+      "duree_mois": 8,
+      "attestation_bonne_execution": false
+    },
+    {
+      "id": "REF-14",
+      "client": "Office National des Aéroports",
+      "secteur": "éducation",
+      "objet": "L'assistance à maîtrise d'ouvrage du programme de transformation digitale",
+      "montant_ht_mad": 2066000,
+      "annee_debut": 2022,
+      "duree_mois": 6,
+      "attestation_bonne_execution": true
+    },
+    {
+      "id": "REF-15",
+      "client": "Office National Marocain du Tourisme",
+      "secteur": "transport",
+      "objet": "La mise en place d'une plateforme de dématérialisation des marchés",
+      "montant_ht_mad": 4366000,
+      "annee_debut": 2021,
+      "duree_mois": 24,
+      "attestation_bonne_execution": true
+    },
+    {
+      "id": "REF-16",
+      "client": "Caisse Nationale de Sécurité Sociale",
+      "secteur": "énergie",
+      "objet": "La maintenance applicative du parc logiciel métier",
+      "montant_ht_mad": 3087000,
+      "annee_debut": 2024,
+      "duree_mois": 24,
+      "attestation_bonne_execution": true
+    },
+    {
+      "id": "REF-17",
+      "client": "Office National des Aéroports",
+      "secteur": "finances publiques",
+      "objet": "La fourniture, l'installation et la mise en service d'équipements réseau",
+      "montant_ht_mad": 5295000,
+      "annee_debut": 2022,
+      "duree_mois": 18,
+      "attestation_bonne_execution": true
+    },
+    {
+      "id": "REF-18",
+      "client": "Agence de Développement du Digital",
+      "secteur": "digital",
+      "objet": "La mise en œuvre d'une plateforme d'échange et d'interopérabilité",
+      "montant_ht_mad": 3050000,
+      "annee_debut": 2021,
+      "duree_mois": 8,
+      "attestation_bonne_execution": true
+    },
+    {
+      "id": "REF-19",
+      "client": "Agence Urbaine de Casablanca",
+      "secteur": "santé",
+      "objet": "La maintenance applicative du parc logiciel métier",
+      "montant_ht_mad": 5028000,
+      "annee_debut": 2024,
+      "duree_mois": 8,
+      "attestation_bonne_execution": true
+    },
+    {
+      "id": "REF-20",
+      "client": "Caisse Nationale de Sécurité Sociale",
+      "secteur": "éducation",
+      "objet": "La fourniture, l'installation et la mise en service d'équipements réseau",
+      "montant_ht_mad": 4414000,
+      "annee_debut": 2021,
+      "duree_mois": 24,
+      "attestation_bonne_execution": false
+    },
+    {
+      "id": "REF-21",
+      "client": "Agence de Développement du Digital",
+      "secteur": "transport",
+      "objet": "L'assistance à maîtrise d'ouvrage du programme de transformation digitale",
+      "montant_ht_mad": 6439000,
+      "annee_debut": 2023,
+      "duree_mois": 8,
+      "attestation_bonne_execution": true
+    },
+    {
+      "id": "REF-22",
+      "client": "Office National de l'Électricité et de l'Eau Potable",
+      "secteur": "énergie",
+      "objet": "La fourniture, l'installation et la mise en service d'équipements réseau",
+      "montant_ht_mad": 434000,
+      "annee_debut": 2022,
+      "duree_mois": 6,
+      "attestation_bonne_execution": true
+    },
+    {
+      "id": "REF-23",
+      "client": "Agence de Développement du Digital",
+      "secteur": "finances publiques",
+      "objet": "L'audit et la sécurisation du système d'information",
+      "montant_ht_mad": 6548000,
+      "annee_debut": 2024,
+      "duree_mois": 18,
+      "attestation_bonne_execution": true
+    },
+    {
+      "id": "REF-24",
+      "client": "Caisse Nationale de Sécurité Sociale",
+      "secteur": "digital",
+      "objet": "La fourniture, l'installation et la mise en service d'équipements réseau",
+      "montant_ht_mad": 2573000,
+      "annee_debut": 2024,
+      "duree_mois": 8,
+      "attestation_bonne_execution": true
+    }
+  ],
+  "equipe": [
+    {
+      "id": "CV-01",
+      "initiales": "C.Y.",
+      "poste": "Chef de projet",
+      "annees_experience": 12,
+      "diplome": "Ingénieur télécoms et réseaux",
+      "certifications": [
+        "ITIL v4",
+        "PMP"
+      ],
+      "langues": [
+        "français",
+        "arabe"
+      ]
+    },
+    {
+      "id": "CV-02",
+      "initiales": "E.Q.",
+      "poste": "Architecte technique",
+      "annees_experience": 14,
+      "diplome": "Master en cybersécurité",
+      "certifications": [
+        "CISSP"
+      ],
+      "langues": [
+        "français",
+        "arabe",
+        "anglais"
+      ]
+    },
+    {
+      "id": "CV-03",
+      "initiales": "X.L.",
+      "poste": "Ingénieur de développement",
+      "annees_experience": 12,
+      "diplome": "Ingénieur d'État en informatique",
+      "certifications": [
+        "PRINCE2",
+        "CISSP",
+        "AWS Solutions Architect"
+      ],
+      "langues": [
+        "français",
+        "arabe",
+        "anglais"
+      ]
+    },
+    {
+      "id": "CV-04",
+      "initiales": "C.I.",
+      "poste": "Ingénieur qualité",
+      "annees_experience": 11,
+      "diplome": "Ingénieur télécoms et réseaux",
+      "certifications": [
+        "PRINCE2"
+      ],
+      "langues": [
+        "français",
+        "arabe",
+        "anglais"
+      ]
+    },
+    {
+      "id": "CV-05",
+      "initiales": "X.X.",
+      "poste": "Ingénieur sécurité",
+      "annees_experience": 7,
+      "diplome": "Ingénieur télécoms et réseaux",
+      "certifications": [
+        "PRINCE2",
+        "AWS Solutions Architect"
+      ],
+      "langues": [
+        "français",
+        "arabe"
+      ]
+    },
+    {
+      "id": "CV-06",
+      "initiales": "R.T.",
+      "poste": "Data engineer",
+      "annees_experience": 13,
+      "diplome": "Master en systèmes d'information",
+      "certifications": [
+        "TOGAF",
+        "PMP"
+      ],
+      "langues": [
+        "français",
+        "arabe",
+        "anglais"
+      ]
+    },
+    {
+      "id": "CV-07",
+      "initiales": "A.J.",
+      "poste": "Analyste métier",
+      "annees_experience": 7,
+      "diplome": "Ingénieur télécoms et réseaux",
+      "certifications": [
+        "AWS Solutions Architect",
+        "PRINCE2",
+        "CISSP"
+      ],
+      "langues": [
+        "français",
+        "arabe",
+        "anglais"
+      ]
+    },
+    {
+      "id": "CV-08",
+      "initiales": "J.B.",
+      "poste": "Ingénieur DevOps",
+      "annees_experience": 9,
+      "diplome": "Master en systèmes d'information",
+      "certifications": [
+        "Scrum Master",
+        "CISSP"
+      ],
+      "langues": [
+        "français",
+        "arabe",
+        "anglais"
+      ]
+    },
+    {
+      "id": "CV-09",
+      "initiales": "T.Z.",
+      "poste": "Chef de projet",
+      "annees_experience": 10,
+      "diplome": "Ingénieur télécoms et réseaux",
+      "certifications": [
+        "AWS Solutions Architect",
+        "ITIL v4"
+      ],
+      "langues": [
+        "français",
+        "arabe",
+        "anglais"
+      ]
+    },
+    {
+      "id": "CV-10",
+      "initiales": "V.U.",
+      "poste": "Architecte technique",
+      "annees_experience": 16,
+      "diplome": "Master en systèmes d'information",
+      "certifications": [
+        "PRINCE2",
+        "CISSP",
+        "PMP"
+      ],
+      "langues": [
+        "français",
+        "arabe",
+        "anglais"
+      ]
+    },
+    {
+      "id": "CV-11",
+      "initiales": "P.A.",
+      "poste": "Ingénieur de développement",
+      "annees_experience": 14,
+      "diplome": "Ingénieur d'État en informatique",
+      "certifications": [
+        "ITIL v4"
+      ],
+      "langues": [
+        "français",
+        "arabe",
+        "anglais"
+      ]
+    },
+    {
+      "id": "CV-12",
+      "initiales": "H.R.",
+      "poste": "Ingénieur qualité",
+      "annees_experience": 10,
+      "diplome": "Ingénieur télécoms et réseaux",
+      "certifications": [
+        "AWS Solutions Architect",
+        "TOGAF",
+        "Azure Administrator"
+      ],
+      "langues": [
+        "français",
+        "arabe",
+        "anglais"
+      ]
+    },
+    {
+      "id": "CV-13",
+      "initiales": "O.K.",
+      "poste": "Ingénieur sécurité",
+      "annees_experience": 15,
+      "diplome": "Master en systèmes d'information",
+      "certifications": [
+        "PRINCE2"
+      ],
+      "langues": [
+        "français",
+        "arabe",
+        "anglais"
+      ]
+    },
+    {
+      "id": "CV-14",
+      "initiales": "L.R.",
+      "poste": "Data engineer",
+      "annees_experience": 12,
+      "diplome": "Master en cybersécurité",
+      "certifications": [
+        "Scrum Master",
+        "AWS Solutions Architect",
+        "PMP"
+      ],
+      "langues": [
+        "français",
+        "arabe",
+        "anglais"
+      ]
+    }
+  ]
+}

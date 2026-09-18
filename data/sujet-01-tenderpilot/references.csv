@@ -1,0 +1,25 @@
+id,client,secteur,objet,montant_ht_mad,annee_debut,duree_mois,attestation_bonne_execution
+REF-01,Agence Urbaine de Casablanca,santé,L'audit et la sécurisation du système d'information,5176000,2021,12,True
+REF-02,Agence Nationale de Réglementation des Télécommunications,éducation,La refonte du portail citoyen et de ses services en ligne,5648000,2022,6,True
+REF-03,Office National des Aéroports,transport,La refonte du portail citoyen et de ses services en ligne,6424000,2023,8,True
+REF-04,Ministère de l'Éducation Nationale,énergie,L'accompagnement à la mise en conformité à la protection des données,5295000,2024,8,True
+REF-05,Agence Nationale des Ports,finances publiques,L'audit et la sécurisation du système d'information,4511000,2022,12,True
+REF-06,Caisse Nationale de Sécurité Sociale,digital,L'accompagnement à la mise en conformité à la protection des données,1140000,2023,8,False
+REF-07,Agence de Développement du Digital,santé,La mise en place d'un système d'information décisionnel,871000,2024,18,False
+REF-08,Agence Nationale des Ports,éducation,La mise en œuvre d'une plateforme d'échange et d'interopérabilité,1749000,2024,18,False
+REF-09,Ministère de la Santé et de la Protection sociale,transport,Le développement d'une application mobile de services aux usagers,1517000,2022,8,True
+REF-10,Agence de Développement du Digital,énergie,La mise en place d'une plateforme de dématérialisation des marchés,2592000,2024,24,True
+REF-11,Ministère de la Santé et de la Protection sociale,finances publiques,La mise en place d'un système d'information décisionnel,4381000,2022,12,True
+REF-12,Agence de Développement du Digital,digital,La refonte du portail citoyen et de ses services en ligne,484000,2022,6,True
+REF-13,Agence Urbaine de Casablanca,santé,L'acquisition et l'intégration d'une solution de gestion électronique de documents,524000,2022,8,False
+REF-14,Office National des Aéroports,éducation,L'assistance à maîtrise d'ouvrage du programme de transformation digitale,2066000,2022,6,True
+REF-15,Office National Marocain du Tourisme,transport,La mise en place d'une plateforme de dématérialisation des marchés,4366000,2021,24,True
+REF-16,Caisse Nationale de Sécurité Sociale,énergie,La maintenance applicative du parc logiciel métier,3087000,2024,24,True
+REF-17,Office National des Aéroports,finances publiques,"La fourniture, l'installation et la mise en service d'équipements réseau",5295000,2022,18,True
+REF-18,Agence de Développement du Digital,digital,La mise en œuvre d'une plateforme d'échange et d'interopérabilité,3050000,2021,8,True
+REF-19,Agence Urbaine de Casablanca,santé,La maintenance applicative du parc logiciel métier,5028000,2024,8,True
+REF-20,Caisse Nationale de Sécurité Sociale,éducation,"La fourniture, l'installation et la mise en service d'équipements réseau",4414000,2021,24,False
+REF-21,Agence de Développement du Digital,transport,L'assistance à maîtrise d'ouvrage du programme de transformation digitale,6439000,2023,8,True
+REF-22,Office National de l'Électricité et de l'Eau Potable,énergie,"La fourniture, l'installation et la mise en service d'équipements réseau",434000,2022,6,True
+REF-23,Agence de Développement du Digital,finances publiques,L'audit et la sécurisation du système d'information,6548000,2024,18,True
+REF-24,Caisse Nationale de Sécurité Sociale,digital,"La fourniture, l'installation et la mise en service d'équipements réseau",2573000,2024,8,True
