@@ -5,6 +5,7 @@ import { appelerModele } from "./shared/llm.js";
 import { verifierCitation } from "./shared/citation.js";
 import { construireFait } from "./shared/faits.js";
 import { calculerConfiance, coherenceArticle } from "./shared/confiance.js";
+import { estEliminatoireSelonLeTexte } from "./shared/eliminatoire.js";
 import { SCHEMA_JSON_EXTRACTION, schemaSortieExtraction } from "./shared/schemas.js";
 import type { ExigenceBrute } from "./shared/schemas.js";
 import { ETAPE_CITATION_INTROUVABLE } from "./shared/types.js";
@@ -272,6 +273,18 @@ async function enregistrer(
   const resultatFait = construireFait(brute.fait);
   const article = brute.article?.trim() ? brute.article.trim() : null;
 
+  // Le caractere eliminatoire decide du go / no-go : il ne peut pas dependre
+  // de la lecture d'un modele, qui varie d'un avis a l'autre sur un texte
+  // identique. Le code relit la page et renforce le type quand l'article
+  // annonce lui-meme que le non-respect fait rejeter l'offre.
+  let type = brute.type;
+  if (type !== "eliminatoire" && estEliminatoireSelonLeTexte(article, page.texte)) {
+    type = "eliminatoire";
+    await tracer(runId, `type renforce page ${page.numero}`, 0, "succes", null, null,
+      `"${article}" declare par le modele ${brute.type}, requalifie eliminatoire : ` +
+        "l'article annonce que le non-respect entraine le rejet de l'offre");
+  }
+
   if (!resultatFait.ok && brute.fait !== null) {
     // Le modele a cru voir un fait chiffre, le code n'a pas pu le construire.
     // L'exigence reste affichee, mais sans forme machine : la tranche 4 ne
@@ -304,7 +317,7 @@ async function enregistrer(
       // Une chaine vide n'est pas un article : l'interface doit pouvoir dire
       // "article non identifie" plutot qu'afficher un blanc.
       article,
-      brute.type,
+      type,
       brute.categorie,
       resultatFait.ok ? JSON.stringify(resultatFait.fait) : null,
       confiance.valeur,

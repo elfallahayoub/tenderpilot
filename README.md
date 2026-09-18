@@ -49,7 +49,8 @@ npm test
 
 Les tests portent sur les règles déterministes, c'est-à-dire sur le code dont
 dépend la justesse des verdicts : la normalisation des nombres, la vérification
-des citations, la construction des faits machine, et le barème de confiance.
+des citations, la construction des faits machine, le barème de confiance, le
+moteur de règles, le caractère éliminatoire et l année de référence.
 
 ## Les cinq agents
 
@@ -151,8 +152,9 @@ page 3, qui n'a ni en-tête ni grille autour d'elle.
 
 ## Décisions de conception
 
-Trois choix demandent une explication, parce qu'ils ne vont pas de soi et qu'on
-peut légitimement en attendre l'inverse.
+Cinq choix demandent une explication, parce qu'ils ne vont pas de soi et qu'on
+peut légitimement en attendre l'inverse. Deux d'entre eux viennent d'une erreur
+constatée en exécutant le système sur les dix avis, pas d'une intuition.
 
 ### Le seuil de note technique reste indéterminé, il ne fait jamais basculer en no-go
 
@@ -191,6 +193,31 @@ Le comptage des références est donc **entièrement déterministe et porte sur 
 colonne `secteur`**, jamais sur le nom du client, et il n'est jamais soumis à
 l'arbitrage d'un modèle. Un test unitaire dédié échoue si cette règle est un jour
 contournée.
+
+### Le caractère éliminatoire est établi par le code, pas par le modèle
+
+À la première exécution sur les dix avis, le système a rendu dix go alors que
+quatre no-go étaient attendus. Le moteur de règles avait pourtant correctement
+détecté treize exigences non satisfaites, dont trois certifications absentes du
+profil. Aucune n'était bloquante.
+
+La cause tenait au champ `type`. Les pages 2 de AO-2026-001 et de AO-2026-002
+portent la même phrase, mot pour mot : « Le non-respect d'une condition
+qualifiée d'éliminatoire entraîne le rejet de l'offre sans examen au fond. » Le
+modèle avait typé les conditions de la première éliminatoires, et celles de la
+seconde obligatoires. Une variance de lecture sur le champ qui décide du verdict
+n'est pas acceptable.
+
+Le caractère éliminatoire est donc désormais lu dans le texte par des règles
+pures et testées. Le code découpe la page en articles, cherche dans chaque bloc
+les formulations par lesquelles un marché public annonce un rejet, et
+requalifie les exigences de cet article. La règle ne fait que **renforcer** le
+type produit par le modèle, jamais le déclasser : sur un go / no-go, se tromper
+dans le sens du doute est la seule erreur acceptable.
+
+Chaque requalification est journalisée, et le rattachement se fait page par
+page, ce qui évite de confondre l'article 7 du règlement et l'article 7 du
+cahier des prescriptions spéciales.
 
 ### L'année de référence est lue dans l'avis, et le système dit laquelle a servi
 
@@ -239,14 +266,34 @@ en cache sous l'empreinte du modèle, des prompts et du schéma.
 
 ## Ce qui est vérifié, avec des chiffres
 
-Sur AO-2026-001, sept pages, dix-neuf exigences extraites :
+Sur les dix avis fournis :
 
 | Vérification | Résultat |
 |---|---|
-| Citations présentes mot pour mot dans la page annoncée | 19 sur 19 |
-| Page annoncée cohérente avec la page source | 19 sur 19 |
-| Tests unitaires des règles déterministes | 39 sur 39 |
-| Jetons consommés pour un avis complet | environ 27 000 |
+| Citations présentes mot pour mot dans la page annoncée | 222 sur 222 |
+| Tests unitaires des règles déterministes | 84 sur 84 |
+| Avis pour lesquels un verdict est rendu | 8 sur 10 |
+| Verdicts rendus | 5 go, 3 no-go |
+| Avis où le système refuse de conclure | 2, les scans sans couche texte |
+
+**Le résultat attendu est 6 go et 4 no-go, et je ne l'atteins pas encore.**
+
+Les trois no-go reposent chacun sur une preuve vérifiable : une certification
+exigée à l'article 3.4 que l'entreprise ne détient pas, ISO 22301:2019 pour
+AO-2026-002, ISO 45001:2018 pour AO-2026-008 et AO-2026-010.
+
+Les deux scans, AO-2026-004 et AO-2026-009, ne reçoivent aucun verdict tant que
+l'OCR n'existe pas. Rendre « go » faute de point bloquant sur un document dont
+aucune page n'a pu être lue reviendrait à conclure de l'absence de preuve à la
+preuve de l'absence. Le système affiche « verdict impossible » et dit pourquoi.
+
+Il reste donc un no-go à trouver. L'hypothèse la plus probable est qu'il se
+trouve parmi ces deux scans, et la tranche 6 le dira. L'argument est le
+suivant : les seules autres exigences non satisfaites relèvent toutes de la
+composition d'équipe de l'article 7 du cahier des prescriptions spéciales, et
+concernent six avis sur dix. Les rendre bloquantes produirait six no-go, soit
+deux de trop. Le texte de cet article n'annonce d'ailleurs aucun rejet, à la
+différence de l'article 3.
 
 Sur AO-2026-004, scan sans couche texte : zéro exigence extraite, quatre pages
 déclarées non lues nommément, aucun appel au modèle.
@@ -257,11 +304,11 @@ déclarées non lues nommément, aucun appel au modèle.
   tranche 6. En attendant, le système déclare ces pages comme non lues plutôt
   que d'en déduire quoi que ce soit. Ces deux fichiers ne contiennent par
   ailleurs que quatre des sept pages attendues.
-- Le type d'une exigence, éliminatoire ou obligatoire, reste une lecture du
-  modèle. C'est le moteur de règles de la tranche 4 qui décidera du caractère
-  bloquant, à partir du fait machine et du profil d'entreprise.
-- Le verdict go / no-go, le mémoire technique, la revue humaine et la page
-  Qualité ne sont pas encore construits.
+- Le résultat sur les dix avis est de 5 go et 3 no-go, pour 6 go et 4 no-go
+  attendus, avec deux avis sur lesquels le système refuse de conclure. L écart
+  est analysé plus haut.
+- Le mémoire technique, la revue humaine et la page Qualité ne sont pas encore
+  construits.
 - Les scripts d'initialisation de la base ne rejouent qu'à la création du
   volume. Une évolution de schéma passe donc par `npm run reset`.
 

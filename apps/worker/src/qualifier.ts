@@ -175,12 +175,41 @@ export async function traiterQualification(job: Job<TravailQualification>): Prom
 
     const annee = await determinerAnnee(documentId, runId);
 
+    // Un verdict sur un document qu'on n'a pas su lire ne vaut rien. Rendre
+    // "go" faute de bloquant reviendrait a conclure de l'absence de preuve a
+    // la preuve de l'absence, sur un document entierement illisible.
+    const couverture = await pool.query<{ lues: number; total: number }>(
+      `SELECT count(*) FILTER (WHERE lisible)::int AS lues, count(*)::int AS total
+         FROM pages WHERE document_id = $1`,
+      [documentId],
+    );
+    const lues = couverture.rows[0]?.lues ?? 0;
+    const totalPages = couverture.rows[0]?.total ?? 0;
+
+    if (lues === 0) {
+      const motif =
+        totalPages === 0
+          ? "aucune page enregistree : le document n'a pas pu etre lu"
+          : `aucune des ${totalPages} pages n'a pu etre lue : verdict impossible sans OCR`;
+      await enregistrerSansVerdict(documentId, motif, annee);
+      await tracer(runId, "verdict impossible", Math.round(performance.now() - debutTotal),
+        "escalade", null, null,
+        `${motif}. Aucun verdict n'est rendu plutot qu'un go faute de bloquant : ` +
+          "l'absence de preuve n'est pas la preuve de l'absence.");
+      return { evaluees: 0, bloquants: 0, indetermines: 0, verdict: "indetermine", tokens: 0 };
+    }
+
     const exigences = await lireExigences(documentId);
     if (exigences.length === 0) {
-      await enregistrerVerdict(documentId, "go", annee);
-      await tracer(runId, "qualification terminee", Math.round(performance.now() - debutTotal),
-        "succes", null, null, "aucune exigence a evaluer, verdict go faute de bloquant");
-      return { evaluees: 0, bloquants: 0, indetermines: 0, verdict: "go", tokens: 0 };
+      await enregistrerSansVerdict(
+        documentId,
+        `aucune exigence extraite de ${lues} pages lues : verdict impossible`,
+        annee,
+      );
+      await tracer(runId, "verdict impossible", Math.round(performance.now() - debutTotal),
+        "escalade", null, null,
+        "les pages ont ete lues mais aucune exigence n'en a ete tiree, revue humaine necessaire");
+      return { evaluees: 0, bloquants: 0, indetermines: 0, verdict: "indetermine", tokens: 0 };
     }
 
     await pool.query(`DELETE FROM evaluations WHERE document_id = $1`, [documentId]);
@@ -420,6 +449,24 @@ async function enregistrerVerdict(
             annee_reference = $3, origine_annee_reference = $4
       WHERE id = $1`,
     [documentId, verdict, annee.annee, annee.origine],
+  );
+}
+
+/**
+ * Cloture sans verdict. Le traitement a bien abouti, mais le systeme declare
+ * qu'il ne peut pas conclure, et dit pourquoi.
+ */
+async function enregistrerSansVerdict(
+  documentId: string,
+  motif: string,
+  annee: ReturnType<typeof determinerAnneeReference>,
+): Promise<void> {
+  await pool.query(
+    `UPDATE documents
+        SET verdict = NULL, statut_qualification = 'termine', motif_qualification = $2,
+            annee_reference = $3, origine_annee_reference = $4
+      WHERE id = $1`,
+    [documentId, motif.slice(0, 500), annee.annee, annee.origine],
   );
 }
 

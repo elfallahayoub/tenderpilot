@@ -122,6 +122,16 @@ export function Matrice({ document }: Props) {
         </div>
       )}
 
+      {donnees.verdict === null && donnees.statutQualification === "termine" && (
+        <div className="verdict verdict--indetermine">
+          <div className="verdict__titre">
+            VERDICT IMPOSSIBLE
+            <span className="verdict__source">le systeme refuse de conclure</span>
+          </div>
+          <p className="verdict__resume">{donnees.motifQualification}</p>
+        </div>
+      )}
+
       {donnees.statutQualification === "en_cours" && (
         <p className="info">Evaluation en cours contre le profil d'entreprise.</p>
       )}
