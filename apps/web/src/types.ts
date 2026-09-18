@@ -47,10 +47,17 @@ export type PageNonLue = {
   motif: string;
 };
 
+export type PageOcr = {
+  numero: number;
+  qualite: number | null;
+};
+
 export type Couverture = {
   pagesTotal: number;
   pagesLues: number;
   pagesNonLues: PageNonLue[];
+  /** Pages lues par reconnaissance optique, avec leur qualite sur 100. */
+  pagesOcr: PageOcr[];
 };
 
 /** Un document est encore en mouvement tant que la chaine n'est pas achevee. */
@@ -66,12 +73,28 @@ export function enCours(document: Document): boolean {
   );
 }
 
+/**
+ * "lu" etait trompeur : un scan integralement illisible affichait "lu" alors
+ * que rien ne l'avait ete. Le statut dit desormais ce qui s'est passe, et la
+ * couverture reelle est donnee a part.
+ */
 export const LIBELLE_STATUT: Record<StatutDocument, string> = {
   recu: "en file",
-  en_cours: "lecture",
-  traite: "lu",
+  en_cours: "lecture en cours",
+  traite: "traite",
   echec: "echec",
 };
+
+/** Ce que l'on peut honnetement dire de la lecture d'un document. */
+export function libelleCouverture(document: Document): string {
+  const total = document.nb_pages ?? document.pages_enregistrees;
+  if (total === 0) return "aucune page enregistree";
+  if (document.pages_lisibles === 0) return `aucune des ${total} pages n'a pu etre lue`;
+  if (document.pages_lisibles < total) {
+    return `${document.pages_lisibles} / ${total} pages lues`;
+  }
+  return `${total} pages lues`;
+}
 
 export const LIBELLE_EXTRACTION: Record<StatutExtraction, string> = {
   en_attente: "analyse en attente",

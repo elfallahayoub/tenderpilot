@@ -78,6 +78,10 @@ export type ReponseExigences = {
   motifQualification: string | null;
   /** Produit par le moteur de regles, jamais par un modele. */
   verdict: Verdict | null;
+  /** Non nulle quand le verdict ne peut pas etre tenu pour franc. */
+  reserve: string | null;
+  complet: boolean | null;
+  composantesManquantes: string[] | null;
   anneeReference: number | null;
   origineAnneeReference: string | null;
   exigences: Requirement[];

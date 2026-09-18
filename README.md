@@ -50,13 +50,14 @@ npm test
 Les tests portent sur les règles déterministes, c'est-à-dire sur le code dont
 dépend la justesse des verdicts : la normalisation des nombres, la vérification
 des citations, la construction des faits machine, le barème de confiance, le
-moteur de règles, le caractère éliminatoire et l année de référence.
+moteur de règles, le caractère éliminatoire, l'année de référence, la complétude
+du dossier et la détection des conditions illisibles.
 
 ## Les cinq agents
 
 | Agent | Responsabilité | Modèle | État |
 |---|---|---|---|
-| Ingestor | Lit le PDF page par page, déclare les pages illisibles. | aucun | fait |
+| Ingestor | Lit le PDF page par page, OCRise les scans, déclare ce qu'il n'a pas lu. | aucun | fait |
 | Extractor | Transforme chaque page en exigences typées et sourcées. | gpt-4.1 | fait |
 | Qualifier | Évalue chaque exigence contre le profil, prépare le verdict. | gpt-4.1, gpt-5.5 si ambigu | fait |
 | Writer | Rédige le mémoire en citant les références réelles. | gpt-4.1 | à venir |
@@ -152,9 +153,61 @@ page 3, qui n'a ni en-tête ni grille autour d'elle.
 
 ## Décisions de conception
 
-Cinq choix demandent une explication, parce qu'ils ne vont pas de soi et qu'on
-peut légitimement en attendre l'inverse. Deux d'entre eux viennent d'une erreur
+Sept choix demandent une explication, parce qu'ils ne vont pas de soi et qu'on
+peut légitimement en attendre l'inverse. Plusieurs viennent d'une erreur
 constatée en exécutant le système sur les dix avis, pas d'une intuition.
+
+### Un no-go est solide sur un document incomplet, un go ne l'est pas
+
+C'est l'asymétrie qui gouverne tout le traitement des documents partiellement
+lus, et elle mérite d'être énoncée avant le reste.
+
+**Un no-go reste valable même si une partie du document n'a pas été lue.** Un
+point bloquant trouvé est un point bloquant. Lire les pages manquantes ne
+pourrait qu'en ajouter, jamais en retirer. La conclusion tient.
+
+**Un go sur un document incomplet ne vaut rien.** Les pages absentes ou
+illisibles peuvent porter précisément la condition qui bloque. Conclure « go »
+reviendrait à tirer de l'absence de preuve la preuve de l'absence.
+
+Le verdict reste donc binaire, pour que le décompte reste comparable aux six go
+et quatre no-go attendus, mais il est accompagné d'une **réserve** qui n'est
+jamais silencieuse. Un go assorti d'une réserve s'affiche **GO SOUS RÉSERVE**,
+en ambre, avec la liste nommée de ce qui n'a pas été lu. La réserve est aussi
+visible que le verdict. Sur un no-go, la réserve est affichée avec la mention
+qu'elle ne l'affaiblit pas.
+
+Quatre causes déclenchent une réserve, cumulables et toutes nommées : une
+composante annoncée du dossier est absente, une énumération de conditions
+présente un trou que l'OCR n'a pas su combler, une page reste illisible même
+après OCR, ou la reconnaissance d'une page est sous le seuil de confiance.
+
+Et quand **aucune** page n'est lisible, il n'y a pas de verdict du tout : le
+système affiche « verdict impossible » et dit pourquoi.
+
+### Le système nomme ce qui manque, il ne compte pas des pages
+
+Comment savoir qu'un dossier est incomplet ? La tentation serait de comparer :
+huit avis sur dix ont sept pages, donc ceux qui en ont quatre sont amputés de
+trois. **Le système ne fait jamais cela.** Déduire un document d'un autre
+supposerait une norme qui n'existe nulle part, et tomberait au premier avis
+légitimement plus court.
+
+Le document annonce lui-même sa composition, en première page, et cette phrase
+s'OCRise proprement même sur les scans dégradés :
+
+> Le présent dossier de consultation comprend le règlement de la consultation,
+> le cahier des prescriptions spéciales, le bordereau des prix et le planning
+> prévisionnel d'exécution.
+
+Le code relève les quatre composantes annoncées, cherche l'en-tête de chacune
+dans les pages, et nomme celles qui manquent. Sur AO-2026-004 et AO-2026-009 il
+trouve le règlement et le cahier des prescriptions, et déclare absents **le
+bordereau des prix et le planning prévisionnel**. Un test unitaire vérifie que
+l'annonce ne se valide jamais elle-même, la page qui la porte contenant les
+quatre libellés.
+
+Dire ce qui manque vaut mieux que dire combien de pages manquent.
 
 ### Le seuil de note technique reste indéterminé, il ne fait jamais basculer en no-go
 
@@ -270,45 +323,44 @@ Sur les dix avis fournis :
 
 | Vérification | Résultat |
 |---|---|
-| Citations présentes mot pour mot dans la page annoncée | 222 sur 222 |
-| Tests unitaires des règles déterministes | 84 sur 84 |
-| Avis pour lesquels un verdict est rendu | 8 sur 10 |
-| Verdicts rendus | 5 go, 3 no-go |
-| Avis où le système refuse de conclure | 2, les scans sans couche texte |
+| Citations présentes mot pour mot dans la page annoncée | 249 sur 249 |
+| Tests unitaires des règles déterministes | 101 sur 101 |
+| Verdicts rendus | 5 go, 2 go sous réserve, 3 no-go |
+| Pages lues par reconnaissance optique | 8, toutes exploitables |
+| Confiance maximale d'une exigence issue d'un scan | 0,60, le plafond |
 
-**Le résultat attendu est 6 go et 4 no-go, et je ne l'atteins pas encore.**
+**Le résultat attendu est 6 go et 4 no-go. J'obtiens 7 go, dont 2 sous réserve,
+et 3 no-go. Il me manque un no-go, et je sais lequel.**
 
 Les trois no-go reposent chacun sur une preuve vérifiable : une certification
 exigée à l'article 3.4 que l'entreprise ne détient pas, ISO 22301:2019 pour
 AO-2026-002, ISO 45001:2018 pour AO-2026-008 et AO-2026-010.
 
-Les deux scans, AO-2026-004 et AO-2026-009, ne reçoivent aucun verdict tant que
-l'OCR n'existe pas. Rendre « go » faute de point bloquant sur un document dont
-aucune page n'a pu être lue reviendrait à conclure de l'absence de preuve à la
-preuve de l'absence. Le système affiche « verdict impossible » et dit pourquoi.
+Or **neuf avis sur dix portent une certification lisible à ce même article 3.4.
+Le dixième est AO-2026-004, et c'est précisément cette ligne que l'OCR ne rend
+pas.** Le système en a extrait zéro certification, et affiche à l'écran : « des
+conditions de participation n'ont pas pu être lues, page 2 : article 3,
+conditions 3.2, 3.3 et 3.4 ». Il ne devine pas laquelle, il ne la fabrique pas,
+et il ne prononce pas un go franc.
 
-Il reste donc un no-go à trouver. L'hypothèse la plus probable est qu'il se
-trouve parmi ces deux scans, et la tranche 6 le dira. L'argument est le
-suivant : les seules autres exigences non satisfaites relèvent toutes de la
-composition d'équipe de l'article 7 du cahier des prescriptions spéciales, et
-concernent six avis sur dix. Les rendre bloquantes produirait six no-go, soit
-deux de trop. Le texte de cet article n'annonce d'ailleurs aucun rejet, à la
-différence de l'article 3.
+C'est le comportement voulu. Un système qui aurait obtenu 10 sur 10 ici aurait
+inventé une certification qu'aucune image ne permet de lire.
 
-Sur AO-2026-004, scan sans couche texte : zéro exigence extraite, quatre pages
-déclarées non lues nommément, aucun appel au modèle.
+Deux mesures confirment le diagnostic plutôt que de l'illustrer. La page 2 de
+AO-2026-004 est la seule des huit pages reconnues à passer sous le seuil de
+confiance, à 73,5 pour un seuil de 75. Et la source du scan est à 120 points par
+pouce : rendre la page à 300, 400 ou 600 dpi laisse les mêmes lignes illisibles,
+l'information n'est pas dans le fichier.
 
 ## Limites connues
 
-- Les scans AO-2026-004 et AO-2026-009 ne sont pas encore lus. L'OCR arrive à la
-  tranche 6. En attendant, le système déclare ces pages comme non lues plutôt
-  que d'en déduire quoi que ce soit. Ces deux fichiers ne contiennent par
-  ailleurs que quatre des sept pages attendues.
-- Le résultat sur les dix avis est de 5 go et 3 no-go, pour 6 go et 4 no-go
-  attendus, avec deux avis sur lesquels le système refuse de conclure. L écart
-  est analysé plus haut.
-- Le mémoire technique, la revue humaine et la page Qualité ne sont pas encore
-  construits.
+- Sur AO-2026-004, la condition de certification de l'article 3.4 reste
+  illisible malgré l'OCR. Le système le dit nommément au lieu de la deviner,
+  mais il ne peut donc pas trancher cet avis avec certitude.
+- Le résultat sur les dix avis est de 7 go, dont 2 sous réserve, et 3 no-go,
+  pour 6 go et 4 no-go attendus. L'écart est analysé plus haut.
+- Le mémoire technique, la revue humaine, le journal d'agent à l'écran et la
+  page Qualité ne sont pas encore construits.
 - Les scripts d'initialisation de la base ne rejouent qu'à la création du
   volume. Une évolution de schéma passe donc par `npm run reset`.
 

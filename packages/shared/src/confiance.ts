@@ -27,6 +27,17 @@
 
 export const SOCLE = 0.4;
 
+/**
+ * Plafond applique aux exigences tirees d'une page reconnue par OCR.
+ *
+ * Une page OCR peut etre partiellement fausse sans que rien ne le signale :
+ * un caractere mal reconnu dans un montant passe inapercu. La citation est
+ * bien verifiee contre le texte stocke, mais ce texte est lui-meme le produit
+ * d'une reconnaissance. Aucune exigence issue d'un scan ne peut donc atteindre
+ * la confiance d'une exigence tiree d'une couche texte.
+ */
+export const PLAFOND_CONFIANCE_OCR = 0.6;
+
 export type EtatCitation = "exacte" | "normalisee";
 
 export type EtatFait = "construit" | "non_applicable" | "non_normalisable";
@@ -39,6 +50,8 @@ export type SignauxConfiance = {
   article: CoherenceArticle;
   /** Reprises qu'il a fallu au modele pour rendre une sortie valide sur cette page. */
   reprises: number;
+  /** Provenance du texte de la page. Une page OCR plafonne la confiance. */
+  source?: "texte" | "ocr";
 };
 
 export type DetailConfiance = {
@@ -115,7 +128,16 @@ export function calculerConfiance(signaux: SignauxConfiance): DetailConfiance {
     }`,
   );
 
-  return { valeur: arrondir(Math.min(Math.max(valeur, 0), 1)), justification };
+  let finale = Math.min(Math.max(valeur, 0), 1);
+
+  if (signaux.source === "ocr" && finale > PLAFOND_CONFIANCE_OCR) {
+    justification.push(
+      `plafonne a ${PLAFOND_CONFIANCE_OCR.toFixed(2)} : page reconnue par OCR, texte non certain`,
+    );
+    finale = PLAFOND_CONFIANCE_OCR;
+  }
+
+  return { valeur: arrondir(finale), justification };
 }
 
 function signe(points: number): string {

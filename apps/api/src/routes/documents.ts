@@ -23,6 +23,9 @@ type LigneDocument = {
   motif_echec: string | null;
   motif_extraction: string | null;
   motif_qualification: string | null;
+  complet: boolean | null;
+  composantes_manquantes: string[] | null;
+  reserve: string | null;
   cree_le: string;
   pages_enregistrees: number;
   pages_lisibles: number;
@@ -40,7 +43,8 @@ type LigneDocument = {
 const SELECTION = `
   SELECT d.id, d.nom_fichier, d.chemin, d.nb_pages, d.statut, d.statut_extraction,
          d.statut_qualification, d.verdict, d.annee_reference, d.origine_annee_reference,
-         d.hash_sha256, d.motif_echec, d.motif_extraction, d.motif_qualification, d.cree_le,
+         d.hash_sha256, d.motif_echec, d.motif_extraction, d.motif_qualification,
+         d.complet, d.composantes_manquantes, d.reserve, d.cree_le,
          COALESCE(c.total, 0)    AS pages_enregistrees,
          COALESCE(c.lisibles, 0) AS pages_lisibles,
          COALESCE(e.total, 0)         AS nb_exigences,
@@ -155,7 +159,8 @@ export async function routesDocuments(app: FastifyInstance): Promise<void> {
       return reponse.code(404).send({ erreur: "document introuvable" });
     }
     const pages = await pool.query(
-      `SELECT id, numero, texte, nb_caracteres, source, lisible, motif_illisible
+      `SELECT id, numero, texte, nb_caracteres, source, lisible, motif_illisible,
+              qualite_ocr, duree_ocr_ms
          FROM pages
         WHERE document_id = $1
         ORDER BY numero ASC`,

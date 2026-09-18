@@ -61,7 +61,15 @@ export function VueDocument({ document }: Props) {
             <span className="page-doc__numero">{page.numero}</span>
             <div className="page-doc__infos">
               <span className="page-doc__compte">{page.nb_caracteres} caracteres</span>
-              <span className="page-doc__source">source : {page.source}</span>
+              <span className={`source source--${page.source}`}>
+                {page.source === "ocr" ? "reconnaissance optique" : "couche texte"}
+              </span>
+              {page.source === "ocr" && page.qualite_ocr !== null && (
+                <span className="page-doc__qualite">
+                  qualite {page.qualite_ocr} sur 100
+                  {page.duree_ocr_ms !== null && ` · ${Math.round(page.duree_ocr_ms / 100) / 10} s`}
+                </span>
+              )}
               {!page.lisible && (
                 <span className="page-doc__motif">illisible : {page.motif_illisible}</span>
               )}

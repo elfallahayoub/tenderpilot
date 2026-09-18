@@ -667,3 +667,69 @@ body {
   color: var(--ambre);
   font-size: 20px;
 }
+
+/* --- reserve sur le verdict --- */
+
+.verdict--reserve {
+  border-left-color: var(--ambre);
+}
+
+.verdict--reserve .verdict__titre {
+  color: var(--ambre);
+  font-size: 21px;
+}
+
+.reserve {
+  margin-top: 12px;
+  padding: 10px 14px;
+  border: 1px solid var(--ambre);
+  border-radius: 6px;
+  background: #fffdf7;
+  font-size: 13px;
+}
+
+.reserve ul {
+  margin: 6px 0 0;
+  padding-left: 20px;
+}
+
+.reserve li {
+  margin-bottom: 3px;
+}
+
+.reserve__note {
+  margin: 8px 0 0;
+  color: var(--discret);
+  font-size: 12px;
+}
+
+.badge--reserve {
+  color: var(--ambre);
+  border-color: var(--ambre);
+}
+
+.bandeau__ocr {
+  display: block;
+  margin-top: 4px;
+  color: var(--ambre);
+}
+
+/* --- provenance du texte d une page --- */
+
+.source {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 1px 6px;
+  border-radius: 9px;
+  border: 1px solid var(--trait);
+}
+
+.source--ocr {
+  color: var(--ambre);
+  border-color: var(--ambre);
+}
+
+.page-doc__qualite {
+  color: var(--ambre);
+}

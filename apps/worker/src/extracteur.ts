@@ -28,6 +28,7 @@ type LignePage = {
   texte: string;
   lisible: boolean;
   motif_illisible: string | null;
+  source: "texte" | "ocr";
 };
 
 const SYSTEME = `Tu es analyste de marches publics marocains.
@@ -300,6 +301,10 @@ async function enregistrer(
     fait: resultatFait.ok ? "construit" : brute.fait === null ? "non_applicable" : "non_normalisable",
     article: coherenceArticle(article, section),
     reprises,
+    // Une page reconnue par OCR plafonne la confiance : son texte est
+    // lui-meme le produit d une reconnaissance, il peut etre faux sans
+    // que rien ne le signale.
+    source: page.source,
   });
 
   await pool.query(
@@ -330,7 +335,7 @@ async function enregistrer(
 
 async function lirePages(documentId: string): Promise<LignePage[]> {
   const resultat = await pool.query<LignePage>(
-    `SELECT id, numero, texte, lisible, motif_illisible
+    `SELECT id, numero, texte, lisible, motif_illisible, source
        FROM pages WHERE document_id = $1 ORDER BY numero ASC`,
     [documentId],
   );

@@ -7,6 +7,12 @@ import type { StatutEvenement } from "./shared/types.js";
 import { fileExtraction } from "./files.js";
 import { ouvrirDocument, PdfInvalide } from "./extraction.js";
 import { ecrireCache, lireCache } from "./cache.js";
+import {
+  ocriserPage,
+  SEUIL_CARACTERES_OCR,
+  SEUIL_CONFIANCE_OCR,
+  RESOLUTION_DPI,
+} from "./ocr.js";
 
 const AGENT = "ingestor";
 
@@ -24,6 +30,9 @@ export type PageEnregistree = {
   source: "texte" | "ocr";
   lisible: boolean;
   motifIllisible: string | null;
+  /** Confiance moyenne de Tesseract, de 0 a 100. Null pour une couche texte. */
+  qualiteOcr: number | null;
+  dureeOcrMs: number | null;
 };
 
 export type ResultatIngestion = {
@@ -100,6 +109,8 @@ export async function traiterIngestion(job: Job<TravailIngestion>): Promise<Resu
           source: "texte",
           lisible: page.lisible,
           motifIllisible: page.motifIllisible,
+          qualiteOcr: null,
+          dureeOcrMs: null,
         });
         await tracer(
           runId,
@@ -110,6 +121,44 @@ export async function traiterIngestion(job: Job<TravailIngestion>): Promise<Resu
             ? `${page.nbCaracteres} caracteres extraits de la couche texte`
             : `page illisible : ${page.motifIllisible}. Aucune exigence ne sera deduite de cette page.`,
         );
+      }
+
+      // --- OCR des pages sans couche texte --------------------------------
+      // On ne tente l'OCR que la ou il n'y a rien a lire : c'est lent, et une
+      // page deja lue n'a rien a y gagner.
+      const aOcriser = pages.filter((page) => !page.lisible);
+      if (aOcriser.length > 0) {
+        await tracer(runId, "plan OCR", 0, "succes",
+          `${aOcriser.length} pages sans couche texte, rendu a ${RESOLUTION_DPI} dpi puis Tesseract en francais`);
+      }
+
+      for (const page of aOcriser) {
+        const resultat = await ocriserPage(chemin, page.numero);
+        const texte = resultat.texte;
+        const utile = texte.trim().length;
+        const lisible = utile >= SEUIL_CARACTERES_OCR;
+
+        page.texte = texte;
+        page.nbCaracteres = texte.length;
+        page.source = "ocr";
+        page.lisible = lisible;
+        page.qualiteOcr = resultat.confianceMoyenne;
+        page.dureeOcrMs = resultat.dureeMs;
+        page.motifIllisible = lisible
+          ? null
+          : utile === 0
+            ? "aucune couche texte, et l'OCR n'a rien reconnu"
+            : `aucune couche texte, et l'OCR n'a rendu que ${utile} caracteres exploitables`;
+
+        // La duree d'OCR est journalisee par page : elle entrera dans la page
+        // Qualite a cote des jetons, comme second poste de cout.
+        await tracer(runId, `OCR page ${page.numero}`, resultat.dureeMs, "succes",
+          lisible
+            ? `${page.nbCaracteres} caracteres, ${resultat.nbMots} mots, confiance moyenne ${resultat.confianceMoyenne} sur 100` +
+              (resultat.confianceMoyenne < SEUIL_CONFIANCE_OCR
+                ? `, sous le seuil de ${SEUIL_CONFIANCE_OCR} : lecture incertaine`
+                : "")
+            : `echec : ${page.motifIllisible}. Aucune exigence n'en sera deduite.`);
       }
 
       await ecrireCache(hash, pages);
@@ -220,14 +269,17 @@ async function enregistrerPages(documentId: string, pages: PageEnregistree[]): P
     await client.query("BEGIN");
     for (const page of pages) {
       await client.query(
-        `INSERT INTO pages (document_id, numero, texte, nb_caracteres, source, lisible, motif_illisible)
-         VALUES ($1, $2, $3, $4, $5, $6, $7)
+        `INSERT INTO pages (document_id, numero, texte, nb_caracteres, source, lisible,
+                            motif_illisible, qualite_ocr, duree_ocr_ms)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
          ON CONFLICT (document_id, numero) DO UPDATE
            SET texte = EXCLUDED.texte,
                nb_caracteres = EXCLUDED.nb_caracteres,
                source = EXCLUDED.source,
                lisible = EXCLUDED.lisible,
-               motif_illisible = EXCLUDED.motif_illisible`,
+               motif_illisible = EXCLUDED.motif_illisible,
+               qualite_ocr = EXCLUDED.qualite_ocr,
+               duree_ocr_ms = EXCLUDED.duree_ocr_ms`,
         [
           documentId,
           page.numero,
@@ -236,6 +288,8 @@ async function enregistrerPages(documentId: string, pages: PageEnregistree[]): P
           page.source,
           page.lisible,
           page.motifIllisible,
+          page.qualiteOcr,
+          page.dureeOcrMs,
         ],
       );
     }

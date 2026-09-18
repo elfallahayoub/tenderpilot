@@ -1,4 +1,9 @@
-import { LIBELLE_EXTRACTION, LIBELLE_STATUT, type Document } from "./types";
+import {
+  LIBELLE_EXTRACTION,
+  LIBELLE_STATUT,
+  libelleCouverture,
+  type Document,
+} from "./types";
 
 type Props = {
   documents: Document[];
@@ -19,7 +24,6 @@ export function ListeDocuments({ documents, selectionne, onSelection }: Props) {
   return (
     <ul className="documents">
       {documents.map((document) => {
-        const total = document.nb_pages ?? document.pages_enregistrees;
         return (
           <li key={document.id}>
             <button
@@ -29,8 +33,17 @@ export function ListeDocuments({ documents, selectionne, onSelection }: Props) {
             >
               <span className="document__nom">{document.nom_fichier}</span>
               {document.verdict ? (
-                <span className={`badge badge--verdict-${document.verdict}`}>
-                  {document.verdict === "go" ? "GO" : "NO-GO"}
+                <span
+                  className={`badge badge--verdict-${document.verdict} ${
+                    document.verdict === "go" && document.reserve ? "badge--reserve" : ""
+                  }`}
+                  title={document.reserve ?? undefined}
+                >
+                  {document.verdict === "no_go"
+                    ? "NO-GO"
+                    : document.reserve
+                      ? "GO SOUS RESERVE"
+                      : "GO"}
                 </span>
               ) : (
                 <span className={`badge badge--${document.statut}`}>
@@ -38,7 +51,7 @@ export function ListeDocuments({ documents, selectionne, onSelection }: Props) {
                 </span>
               )}
               <span className="document__pages">
-                {total > 0 ? `${document.pages_lisibles} / ${total} pages lues` : "pages inconnues"}
+                {libelleCouverture(document)}
                 {document.statut === "traite" && (
                   <>
                     {" · "}

@@ -94,11 +94,41 @@ export function Matrice({ document }: Props) {
   return (
     <section>
       {donnees.verdict !== null && (
-        <div className={`verdict verdict--${donnees.verdict}`}>
+        <div
+          className={`verdict verdict--${donnees.verdict} ${
+            donnees.verdict === "go" && donnees.reserve ? "verdict--reserve" : ""
+          }`}
+        >
           <div className="verdict__titre">
-            {donnees.verdict === "go" ? "GO" : "NO-GO"}
+            {donnees.verdict === "no_go"
+              ? "NO-GO"
+              : donnees.reserve
+                ? "GO SOUS RESERVE"
+                : "GO"}
             <span className="verdict__source">verdict produit par le moteur de regles</span>
           </div>
+
+          {donnees.reserve && (
+            <div className="reserve">
+              <strong>
+                {donnees.verdict === "go"
+                  ? "Ce go ne peut pas etre tenu pour franc."
+                  : "Document incomplet, ce qui n'affaiblit pas le no-go :"}
+              </strong>
+              <ul>
+                {donnees.reserve.split(" ; ").map((motif) => (
+                  <li key={motif}>{motif}</li>
+                ))}
+              </ul>
+              {donnees.verdict === "go" && (
+                <p className="reserve__note">
+                  Les parties non lues peuvent porter la condition qui bloque. Un point
+                  bloquant trouve reste un point bloquant, mais son absence n'est pas
+                  demontree ici.
+                </p>
+              )}
+            </div>
+          )}
           <p className="verdict__resume">
             {bloquants.length === 0
               ? "Aucun point bloquant : toutes les exigences eliminatoires sont satisfaites."
@@ -152,6 +182,16 @@ export function Matrice({ document }: Props) {
           </span>
         ) : (
           <span> Toutes les pages ont ete analysees.</span>
+        )}
+        {couverture.pagesOcr.length > 0 && (
+          <span className="bandeau__ocr">
+            {" "}
+            Lues par reconnaissance optique :{" "}
+            {couverture.pagesOcr
+              .map((page) => `page ${page.numero} (${page.qualite ?? "?"} sur 100)`)
+              .join(", ")}
+            .
+          </span>
         )}
       </div>
 

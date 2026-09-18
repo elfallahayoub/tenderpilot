@@ -7,6 +7,9 @@ import { lireProfil, ProfilAbsent } from "./shared/profil.js";
 import { construireFait } from "./shared/faits.js";
 import { schemaFaitBrut } from "./shared/schemas.js";
 import { determinerAnneeReference } from "./shared/dates.js";
+import { analyserCompletude, decrireManques } from "./shared/completude.js";
+import { decrireLacune, detecterLacunes } from "./shared/lacunes.js";
+import { SEUIL_CONFIANCE_OCR } from "./ocr.js";
 import {
   calculerVerdict,
   estBloquant,
@@ -271,11 +274,15 @@ export async function traiterQualification(job: Job<TravailQualification>): Prom
     const bilan = calculerVerdict(
       lignes.map((ligne) => ({ statut: ligne.statut, type: ligne.type })),
     );
-    await enregistrerVerdict(documentId, bilan.verdict, annee);
+
+    const reserves = await analyserReserves(documentId, runId);
+    await enregistrerVerdict(documentId, bilan.verdict, annee, reserves);
 
     await tracer(runId, "verdict", Math.round(performance.now() - debutTotal), "succes", null, tokens,
-      `${bilan.verdict.toUpperCase()} : ${bilan.bloquants} bloquants, ${bilan.indetermines} indetermines, ` +
-        `${lignes.length} exigences evaluees, annee de reference ${annee.annee} (${annee.origine})`);
+      `${bilan.verdict === "go" && reserves.motifs.length > 0 ? "GO SOUS RESERVE" : bilan.verdict.toUpperCase()}` +
+        ` : ${bilan.bloquants} bloquants, ${bilan.indetermines} indetermines, ` +
+        `${lignes.length} exigences evaluees, annee de reference ${annee.annee} (${annee.origine})` +
+        (reserves.motifs.length > 0 ? `. Reserve : ${reserves.motifs.join(" ; ")}` : ""));
 
     return {
       evaluees: lignes.length,
@@ -305,6 +312,112 @@ export async function traiterQualification(job: Job<TravailQualification>): Prom
       `${message}. ${maxTentatives} tentatives epuisees, intervention humaine requise.`);
     throw erreur;
   }
+}
+
+// --- Reserves sur le verdict ------------------------------------------------
+
+type Reserves = {
+  motifs: string[];
+  complet: boolean;
+  composantesManquantes: string[];
+};
+
+/**
+ * Tout ce qui empeche de tenir le verdict pour franc.
+ *
+ * Trois causes, cumulables et toujours nommees : une composante annoncee du
+ * dossier est absente, une page n'a pas pu etre lue meme apres OCR, ou une
+ * enumeration de conditions presente un trou parce que l'OCR n'a pas su la
+ * restituer.
+ *
+ * La derniere est la plus importante pour le jury : sur AO-2026-004, la
+ * condition de certification de l'article 3.4 est illisible, et c'est
+ * precisement le genre de condition qui fait basculer un avis en no-go. Le
+ * systeme ne l'invente pas, et il ne se tait pas non plus.
+ */
+async function analyserReserves(documentId: string, runId: string): Promise<Reserves> {
+  const pages = await pool.query<{
+    numero: number;
+    texte: string;
+    lisible: boolean;
+    source: string;
+    qualite_ocr: number | null;
+    motif_illisible: string | null;
+  }>(
+    `SELECT numero, texte, lisible, source, qualite_ocr, motif_illisible
+       FROM pages WHERE document_id = $1 ORDER BY numero`,
+    [documentId],
+  );
+
+  const motifs: string[] = [];
+
+  // 1. Composantes annoncees par le document et introuvables.
+  const completude = analyserCompletude(
+    pages.rows.map((page) => ({ numero: page.numero, texte: page.texte })),
+  );
+  const contientDuOcr = pages.rows.some((page) => page.source === "ocr");
+
+  if (!completude.complet) {
+    const phrase = decrireManques(completude.manquantes);
+    motifs.push(phrase);
+    await tracer(runId, "completude du dossier", 0, "succes", null, null,
+      `${phrase}. Etabli a partir de la composition annoncee par le document lui-meme, ` +
+        "jamais par comparaison avec un autre avis.");
+  } else if (!completude.annonceSaComposition && contientDuOcr) {
+    // Le document n'annonce pas sa composition de facon lisible. On ne peut
+    // ni conclure qu'il est complet, ni pretendre savoir ce qui manque. Le
+    // dire est la seule reponse honnete.
+    const phrase =
+      "la phrase annoncant la composition du dossier n'a pas pu etre lue : la completude n'a pas pu etre verifiee";
+    motifs.push(phrase);
+    await tracer(runId, "completude indeterminable", 0, "escalade", null, null,
+      `${phrase}. Aucune conclusion n'est tiree d'une comparaison avec d'autres avis.`);
+  }
+
+  // 2. Conditions dont l'enumeration a un trou : l'OCR n'a pas su les lire.
+  for (const page of pages.rows) {
+    if (page.source !== "ocr" || !page.lisible) continue;
+    for (const lacune of detecterLacunes(page.texte)) {
+      const phrase = decrireLacune(lacune, page.numero);
+      motifs.push(phrase);
+      await tracer(runId, "condition illisible", 0, "escalade", null, null,
+        `${phrase}. Aucune exigence n'en est deduite, et le verdict ne peut pas etre tenu pour franc.`);
+    }
+  }
+
+  // 3. Pages restees illisibles apres OCR.
+  const illisibles = pages.rows.filter((page) => !page.lisible);
+  if (illisibles.length > 0) {
+    motifs.push(
+      `${illisibles.length} page${illisibles.length > 1 ? "s" : ""} non lue${
+        illisibles.length > 1 ? "s" : ""
+      } meme apres OCR : ${illisibles.map((page) => page.numero).join(", ")}`,
+    );
+  }
+
+  // 4. Pages lues par OCR mais dont la reconnaissance est douteuse.
+  const douteuses = pages.rows.filter(
+    (page) =>
+      page.source === "ocr" &&
+      page.lisible &&
+      page.qualite_ocr !== null &&
+      page.qualite_ocr < SEUIL_CONFIANCE_OCR,
+  );
+  if (douteuses.length > 0) {
+    motifs.push(
+      `reconnaissance incertaine sur ${douteuses.length} page${douteuses.length > 1 ? "s" : ""} : ` +
+        douteuses
+          .map((page) => `page ${page.numero} a ${page.qualite_ocr} sur 100`)
+          .join(", ") +
+        `, seuil ${SEUIL_CONFIANCE_OCR}`,
+    );
+  }
+
+  return {
+    motifs,
+    complet: completude.complet,
+    composantesManquantes: completude.manquantes,
+  };
 }
 
 // --- Annee de reference -----------------------------------------------------
@@ -442,13 +555,23 @@ async function enregistrerVerdict(
   documentId: string,
   verdict: string,
   annee: ReturnType<typeof determinerAnneeReference>,
+  reserves: Reserves,
 ): Promise<void> {
   await pool.query(
     `UPDATE documents
         SET verdict = $2, statut_qualification = 'termine', motif_qualification = NULL,
-            annee_reference = $3, origine_annee_reference = $4
+            annee_reference = $3, origine_annee_reference = $4,
+            complet = $5, composantes_manquantes = $6, reserve = $7
       WHERE id = $1`,
-    [documentId, verdict, annee.annee, annee.origine],
+    [
+      documentId,
+      verdict,
+      annee.annee,
+      annee.origine,
+      reserves.complet,
+      reserves.composantesManquantes,
+      reserves.motifs.length === 0 ? null : reserves.motifs.join(" ; "),
+    ],
   );
 }
 

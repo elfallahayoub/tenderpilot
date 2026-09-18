@@ -23,7 +23,10 @@ connexion.on("error", (erreur) => {
 export const DUREE_CACHE_SECONDES = 24 * 60 * 60;
 
 function cle(hash: string): string {
-  return `ingestion:doc:${hash}`;
+  // v2 : les entrees anterieures a l OCR ne contiennent pas les pages
+  // reconnues. Changer la cle les met hors circuit plutot que de servir
+  // une ingestion incomplete.
+  return `ingestion:doc:v2:${hash}`;
 }
 
 export async function lireCache(hash: string): Promise<PageEnregistree[] | null> {

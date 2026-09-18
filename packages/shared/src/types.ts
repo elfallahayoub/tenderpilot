@@ -30,6 +30,11 @@ export type Document = {
   motif_echec: string | null;
   motif_extraction: string | null;
   motif_qualification: string | null;
+  /** Etabli a partir de la composition annoncee par le document lui-meme. */
+  complet: boolean | null;
+  composantes_manquantes: string[] | null;
+  /** Non nul quand le verdict ne peut pas etre tenu pour franc. */
+  reserve: string | null;
   cree_le: string;
   pages_enregistrees: number;
   pages_lisibles: number;
@@ -47,6 +52,9 @@ export type Page = {
   source: "texte" | "ocr";
   lisible: boolean;
   motif_illisible: string | null;
+  /** Confiance moyenne de Tesseract sur 100. Null pour une couche texte. */
+  qualite_ocr: number | null;
+  duree_ocr_ms: number | null;
 };
 
 // --- Exigences --------------------------------------------------------------

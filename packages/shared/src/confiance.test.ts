@@ -1,6 +1,12 @@
 import { strict as assert } from "node:assert";
 import { test } from "node:test";
-import { calculerConfiance, coherenceArticle, SOCLE, type SignauxConfiance } from "./confiance.js";
+import {
+  calculerConfiance,
+  coherenceArticle,
+  PLAFOND_CONFIANCE_OCR,
+  SOCLE,
+  type SignauxConfiance,
+} from "./confiance.js";
 
 function signaux(partiel: Partial<SignauxConfiance> = {}): SignauxConfiance {
   return {
@@ -74,6 +80,28 @@ test("cas reels de AO-2026-001", () => {
     calculerConfiance(signaux({ fait: "non_applicable", article: "indeterminable" })).valeur,
     0.85,
   );
+});
+
+test("une exigence issue d'une page OCR est plafonnee", () => {
+  const surCoucheTexte = calculerConfiance(signaux({ source: "texte" }));
+  const surOcr = calculerConfiance(signaux({ source: "ocr" }));
+
+  assert.equal(surCoucheTexte.valeur, 1);
+  assert.equal(surOcr.valeur, PLAFOND_CONFIANCE_OCR);
+  assert.ok(surOcr.justification.some((ligne) => ligne.includes("OCR")));
+});
+
+test("le plafond OCR ne releve jamais une confiance basse", () => {
+  const faible = calculerConfiance(
+    signaux({ citation: "normalisee", fait: "non_normalisable", article: "absent", reprises: 2, source: "ocr" }),
+  );
+  // 0.55 est deja sous le plafond : il reste a 0.55, le plafond ne l'augmente pas.
+  assert.equal(faible.valeur, 0.55);
+  assert.ok(!faible.justification.some((ligne) => ligne.includes("plafonne")));
+});
+
+test("sans source declaree, aucun plafond n'est applique", () => {
+  assert.equal(calculerConfiance(signaux()).valeur, 1);
 });
 
 test("coherence de l'article avec la section calculee", () => {

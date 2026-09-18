@@ -30,12 +30,16 @@ export async function routesExigences(app: FastifyInstance): Promise<void> {
       statut_qualification: string;
       motif_qualification: string | null;
       verdict: string | null;
+      complet: boolean | null;
+      composantes_manquantes: string[] | null;
+      reserve: string | null;
       annee_reference: number | null;
       origine_annee_reference: string | null;
       nb_pages: number | null;
     }>(
       `SELECT statut_extraction, motif_extraction, statut_qualification, motif_qualification,
-              verdict, annee_reference, origine_annee_reference, nb_pages
+              verdict, complet, composantes_manquantes, reserve,
+              annee_reference, origine_annee_reference, nb_pages
          FROM documents WHERE id = $1`,
       [id],
     );
@@ -70,9 +74,15 @@ export async function routesExigences(app: FastifyInstance): Promise<void> {
       numero: number;
       lisible: boolean;
       motif_illisible: string | null;
-    }>(`SELECT numero, lisible, motif_illisible FROM pages WHERE document_id = $1 ORDER BY numero`, [
+      source: string;
+      qualite_ocr: number | null;
+    }>(
+      `SELECT numero, lisible, motif_illisible, source, qualite_ocr
+         FROM pages WHERE document_id = $1 ORDER BY numero`,
+      [
       id,
-    ]);
+      ],
+    );
 
     const nonLues = pages.rows.filter((page) => !page.lisible);
 
@@ -84,6 +94,9 @@ export async function routesExigences(app: FastifyInstance): Promise<void> {
       statutQualification: ligne.statut_qualification,
       motifQualification: ligne.motif_qualification,
       verdict: ligne.verdict,
+      complet: ligne.complet,
+      composantesManquantes: ligne.composantes_manquantes,
+      reserve: ligne.reserve,
       anneeReference: ligne.annee_reference,
       origineAnneeReference: ligne.origine_annee_reference,
       exigences: exigences.rows,
@@ -94,6 +107,9 @@ export async function routesExigences(app: FastifyInstance): Promise<void> {
           numero: page.numero,
           motif: page.motif_illisible ?? "page illisible",
         })),
+        pagesOcr: pages.rows
+          .filter((page) => page.source === "ocr" && page.lisible)
+          .map((page) => ({ numero: page.numero, qualite: page.qualite_ocr })),
       },
     };
   });
