@@ -66,6 +66,8 @@ Un raisonnement parfait qu'on ne voit pas ne rapporte rien.
 - Validation : `zod` sur toute sortie de modèle
 - Export : librairie `docx`
 - Outils de développement : `nodemon` en mode scrutin (`--legacy-watch`), parce que les événements du système de fichiers ne traversent pas un montage Windows vers un conteneur Linux et que le rechargement à chaud ne se déclencherait jamais.
+- Téléversement : `@fastify/multipart`, pour recevoir le PDF déposé par l'interface.
+- Extension de schéma acceptée : colonne `motif_echec` sur `documents`, sans laquelle un statut `echec` serait affiché sans sa raison.
 
 Ne pas ajouter de dépendance ni de service hors de cette liste sans le signaler.
 

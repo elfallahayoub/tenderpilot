@@ -1,10 +1,13 @@
 import { Worker, type Job } from "bullmq";
 import IORedis from "ioredis";
+import { traiterIngestion, type TravailIngestion } from "./ingestion.js";
+import { fermerCache } from "./cache.js";
+import { fermerPostgres } from "./db.js";
 
 /**
- * Worker BullMQ. A cette tranche il ne traite encore aucun travail reel :
- * il ouvre la file, prouve que Redis repond, et journalise qu'il est pret.
- * L'ingestion PDF et l'OCR viendront s'y brancher aux tranches suivantes.
+ * Worker BullMQ. Il consomme la file d'ingestion : un depot, un PDF lu page
+ * par page, une ligne par page en base, une ligne par etape dans agent_events.
+ * L'OCR des scans viendra s'y brancher en tranche 6.
  */
 
 export const FILE_INGESTION = "ingestion";
@@ -19,12 +22,12 @@ connection.on("error", (erreur) => {
   console.error("[worker] erreur Redis :", erreur.message);
 });
 
-async function traiter(job: Job): Promise<{ ok: true }> {
+async function traiter(job: Job<TravailIngestion>): Promise<unknown> {
   console.log(`[worker] travail ${job.id} de type "${job.name}" recu`);
-  return { ok: true };
+  return traiterIngestion(job);
 }
 
-const worker = new Worker(FILE_INGESTION, traiter, {
+const worker = new Worker<TravailIngestion>(FILE_INGESTION, traiter, {
   connection,
   concurrency: 2,
 });
@@ -33,9 +36,13 @@ worker.on("ready", () => {
   console.log(`[worker] pret, a l'ecoute de la file "${FILE_INGESTION}"`);
 });
 
+worker.on("completed", (job, resultat) => {
+  console.log(`[worker] travail ${job.id} termine :`, resultat);
+});
+
 worker.on("failed", (job, erreur) => {
-  // Aucune erreur n'est avalee en silence : une tranche ulterieure
-  // l'ecrira dans agent_events avec le statut "echec".
+  // Aucune erreur n'est avalee en silence : le statut du document et le
+  // journal d'agent portent deja le motif, la console le repete.
   console.error(`[worker] travail ${job?.id ?? "inconnu"} en echec :`, erreur.message);
 });
 
@@ -48,7 +55,7 @@ async function arreter(signal: string): Promise<void> {
   console.log(`[worker] signal ${signal} recu, arret en cours`);
   try {
     await worker.close();
-    await connection.quit();
+    await Promise.allSettled([connection.quit(), fermerCache(), fermerPostgres()]);
   } finally {
     process.exit(0);
   }

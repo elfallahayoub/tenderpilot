@@ -6,6 +6,7 @@
   --discret: #6b6b66;
   --vert: #1f7a3d;
   --rouge: #b3261e;
+  --ambre: #9a6700;
   --gris: #b6b6b0;
 }
 
@@ -21,9 +22,18 @@ body {
 }
 
 .page {
-  max-width: 640px;
+  max-width: 1100px;
   margin: 0 auto;
-  padding: 48px 16px;
+  padding: 32px 16px 64px;
+}
+
+.entete {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 20px;
 }
 
 .entete h1 {
@@ -32,41 +42,29 @@ body {
   letter-spacing: -0.01em;
 }
 
-.sous-titre {
-  margin: 4px 0 24px;
+.sante {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
   color: var(--discret);
 }
 
-.carte {
-  background: var(--carte);
-  border: 1px solid var(--trait);
-  border-radius: 8px;
-  padding: 8px 20px 16px;
+.sante span + .pastille {
+  margin-left: 8px;
 }
 
-.voyants {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-}
-
-.voyant {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 14px 0;
-  border-bottom: 1px solid var(--trait);
-}
-
-.voyant:last-child {
-  border-bottom: none;
+.sante__alerte {
+  color: var(--rouge);
+  margin-left: 10px;
 }
 
 .pastille {
-  width: 10px;
-  height: 10px;
+  width: 9px;
+  height: 9px;
   border-radius: 50%;
   flex: none;
+  display: inline-block;
   background: var(--gris);
 }
 
@@ -78,63 +76,261 @@ body {
   background: var(--rouge);
 }
 
-.voyant__nom {
+.pastille--inconnu {
+  background: var(--gris);
+}
+
+/* --- depot --- */
+
+.depot {
+  border: 1px dashed var(--trait);
+  border-radius: 8px;
+  background: var(--carte);
+  padding: 22px 20px;
+  text-align: center;
+}
+
+.depot--survol {
+  border-color: var(--texte);
+  background: #fbfbf9;
+}
+
+.depot__titre {
+  margin: 0 0 4px;
   font-weight: 600;
-  min-width: 110px;
 }
 
-.voyant__note {
+.depot__note {
+  margin: 0;
   color: var(--discret);
   font-size: 13px;
-  word-break: break-word;
 }
 
-.alerte {
-  border: 1px solid var(--trait);
-  border-left: 3px solid var(--rouge);
-  border-radius: 4px;
-  padding: 12px 16px;
-  margin: 16px 0 0;
-  font-size: 14px;
-}
-
-.alerte ul {
-  margin: 8px 0;
-  padding-left: 20px;
-}
-
-.alerte__note {
-  margin: 8px 0 0;
-  color: var(--discret);
-  font-size: 12px;
-}
-
-code {
-  font-family: ui-monospace, "Cascadia Mono", monospace;
-  font-size: 13px;
-}
-
-.pied {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  margin-top: 16px;
-}
-
-.pied button {
+.lien {
   font: inherit;
-  padding: 6px 14px;
-  border: 1px solid var(--trait);
-  border-radius: 6px;
-  background: var(--fond);
+  color: var(--texte);
+  background: none;
+  border: none;
+  border-bottom: 1px solid var(--discret);
+  padding: 0;
   cursor: pointer;
 }
 
-.pied button:hover {
+/* --- messages --- */
+
+.info,
+.erreur {
+  margin: 12px 0 0;
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-size: 14px;
+  border: 1px solid var(--trait);
+  background: var(--carte);
+}
+
+.erreur {
+  border-left: 3px solid var(--rouge);
+  color: var(--rouge);
+}
+
+.info {
+  border-left: 3px solid var(--vert);
+}
+
+.vide {
+  color: var(--discret);
+  font-size: 14px;
+  padding: 8px 0;
+}
+
+/* --- colonnes --- */
+
+.colonnes {
+  display: grid;
+  grid-template-columns: 320px 1fr;
+  gap: 24px;
+  margin-top: 24px;
+  align-items: start;
+}
+
+@media (max-width: 860px) {
+  .colonnes {
+    grid-template-columns: 1fr;
+  }
+}
+
+.titre-section {
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--discret);
+  margin: 0 0 8px;
+}
+
+/* --- liste des documents --- */
+
+.documents {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.document {
+  width: 100%;
+  text-align: left;
+  font: inherit;
+  cursor: pointer;
+  background: var(--carte);
+  border: 1px solid var(--trait);
+  border-radius: 6px;
+  padding: 10px 12px;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 4px 8px;
+}
+
+.document:hover {
   border-color: var(--discret);
 }
 
-.pied__note {
-  color: var(--discret);
+.document--actif {
+  border-color: var(--texte);
+  box-shadow: inset 2px 0 0 var(--texte);
+}
+
+.document__nom {
+  font-weight: 600;
+  word-break: break-all;
+}
+
+.document__pages {
+  grid-column: 1 / -1;
   font-size: 13px;
+  color: var(--discret);
+}
+
+.document__motif {
+  grid-column: 1 / -1;
+  font-size: 12px;
+  color: var(--rouge);
+}
+
+.badge {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 2px 7px;
+  border-radius: 10px;
+  border: 1px solid var(--trait);
+  color: var(--discret);
+  white-space: nowrap;
+  align-self: start;
+}
+
+.badge--traite {
+  color: var(--vert);
+  border-color: var(--vert);
+}
+
+.badge--echec {
+  color: var(--rouge);
+  border-color: var(--rouge);
+}
+
+.badge--en_cours,
+.badge--recu {
+  color: var(--ambre);
+  border-color: var(--ambre);
+}
+
+/* --- detail page par page --- */
+
+.detail__entete h2 {
+  margin: 0 0 6px;
+  font-size: 17px;
+  word-break: break-all;
+}
+
+.detail__meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  margin: 0 0 16px;
+  font-size: 13px;
+  color: var(--discret);
+}
+
+.empreinte {
+  font-family: ui-monospace, "Cascadia Mono", monospace;
+}
+
+.page-doc {
+  background: var(--carte);
+  border: 1px solid var(--trait);
+  border-radius: 8px;
+  padding: 14px 16px;
+  margin-bottom: 10px;
+  max-width: none;
+}
+
+.page-doc--illisible {
+  border-left: 3px solid var(--ambre);
+}
+
+.page-doc__entete {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 10px;
+}
+
+.page-doc__numero {
+  font-size: 30px;
+  font-weight: 700;
+  line-height: 1;
+  min-width: 42px;
+  text-align: center;
+  color: var(--texte);
+}
+
+.page-doc__infos {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 14px;
+  font-size: 13px;
+  color: var(--discret);
+}
+
+.page-doc__compte {
+  font-weight: 600;
+  color: var(--texte);
+}
+
+.page-doc__motif {
+  color: var(--ambre);
+}
+
+.page-doc__texte {
+  margin: 0;
+  max-height: 260px;
+  overflow: auto;
+  white-space: pre-wrap;
+  word-break: break-word;
+  font-family: ui-monospace, "Cascadia Mono", monospace;
+  font-size: 12px;
+  line-height: 1.55;
+  background: #fbfbf9;
+  border: 1px solid var(--trait);
+  border-radius: 4px;
+  padding: 10px 12px;
+}
+
+.page-doc__avertissement {
+  margin: 0;
+  font-size: 13px;
+  color: var(--ambre);
 }

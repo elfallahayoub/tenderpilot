@@ -38,6 +38,7 @@ services:
       - "${API_PORT:-3000}:3000"
     volumes:
       - ./apps/api/src:/app/src
+      - televersements:/app/televersements
       - ./apps/api/tsconfig.json:/app/tsconfig.json:ro
     depends_on:
       postgres:
@@ -51,6 +52,7 @@ services:
     env_file: .env
     volumes:
       - ./apps/worker/src:/app/src
+      - televersements:/app/televersements:ro
       - ./apps/worker/tsconfig.json:/app/tsconfig.json:ro
     depends_on:
       postgres:
@@ -74,3 +76,4 @@ services:
 volumes:
   pgdata:
   redisdata:
+  televersements:
