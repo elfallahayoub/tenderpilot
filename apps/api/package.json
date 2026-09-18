@@ -1,0 +1,23 @@
+{
+  "name": "tenderpilot-api",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "nodemon --legacy-watch --watch src --ext ts,json --exec \"tsx src/index.ts\"",
+    "build": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@fastify/cors": "11.3.0",
+    "fastify": "5.12.5",
+    "ioredis": "5.11.1",
+    "pg": "8.23.0"
+  },
+  "devDependencies": {
+    "@types/node": "20.19.43",
+    "@types/pg": "8.23.1",
+    "nodemon": "3.1.14",
+    "tsx": "4.23.13",
+    "typescript": "5.9.3"
+  }
+}

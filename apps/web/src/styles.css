@@ -1,0 +1,140 @@
+:root {
+  --fond: #f7f7f5;
+  --carte: #ffffff;
+  --trait: #e3e3df;
+  --texte: #1c1c1a;
+  --discret: #6b6b66;
+  --vert: #1f7a3d;
+  --rouge: #b3261e;
+  --gris: #b6b6b0;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--fond);
+  color: var(--texte);
+  font: 15px/1.5 ui-sans-serif, system-ui, "Segoe UI", sans-serif;
+}
+
+.page {
+  max-width: 640px;
+  margin: 0 auto;
+  padding: 48px 16px;
+}
+
+.entete h1 {
+  margin: 0;
+  font-size: 22px;
+  letter-spacing: -0.01em;
+}
+
+.sous-titre {
+  margin: 4px 0 24px;
+  color: var(--discret);
+}
+
+.carte {
+  background: var(--carte);
+  border: 1px solid var(--trait);
+  border-radius: 8px;
+  padding: 8px 20px 16px;
+}
+
+.voyants {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.voyant {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 0;
+  border-bottom: 1px solid var(--trait);
+}
+
+.voyant:last-child {
+  border-bottom: none;
+}
+
+.pastille {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex: none;
+  background: var(--gris);
+}
+
+.pastille--ok {
+  background: var(--vert);
+}
+
+.pastille--ko {
+  background: var(--rouge);
+}
+
+.voyant__nom {
+  font-weight: 600;
+  min-width: 110px;
+}
+
+.voyant__note {
+  color: var(--discret);
+  font-size: 13px;
+  word-break: break-word;
+}
+
+.alerte {
+  border: 1px solid var(--trait);
+  border-left: 3px solid var(--rouge);
+  border-radius: 4px;
+  padding: 12px 16px;
+  margin: 16px 0 0;
+  font-size: 14px;
+}
+
+.alerte ul {
+  margin: 8px 0;
+  padding-left: 20px;
+}
+
+.alerte__note {
+  margin: 8px 0 0;
+  color: var(--discret);
+  font-size: 12px;
+}
+
+code {
+  font-family: ui-monospace, "Cascadia Mono", monospace;
+  font-size: 13px;
+}
+
+.pied {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.pied button {
+  font: inherit;
+  padding: 6px 14px;
+  border: 1px solid var(--trait);
+  border-radius: 6px;
+  background: var(--fond);
+  cursor: pointer;
+}
+
+.pied button:hover {
+  border-color: var(--discret);
+}
+
+.pied__note {
+  color: var(--discret);
+  font-size: 13px;
+}

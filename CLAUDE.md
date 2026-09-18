@@ -65,6 +65,7 @@ Un raisonnement parfait qu'on ne voit pas ne rapporte rien.
 - PDF : `unpdf` ou `pdf-parse` pour la couche texte, Tesseract pour l'OCR
 - Validation : `zod` sur toute sortie de modèle
 - Export : librairie `docx`
+- Outils de développement : `nodemon` en mode scrutin (`--legacy-watch`), parce que les événements du système de fichiers ne traversent pas un montage Windows vers un conteneur Linux et que le rechargement à chaud ne se déclencherait jamais.
 
 Ne pas ajouter de dépendance ni de service hors de cette liste sans le signaler.
 
