@@ -525,3 +525,11 @@ body {
 .document__bloquants {
   color: var(--rouge);
 }
+
+.exigence__bareme {
+  margin: 10px 0 0;
+  font-size: 11px;
+  color: var(--discret);
+  font-family: ui-monospace, "Cascadia Mono", monospace;
+  line-height: 1.5;
+}

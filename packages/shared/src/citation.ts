@@ -68,7 +68,17 @@ function normaliser(texte: string): TexteNormalise {
 }
 
 export type ResultatCitation =
-  | { trouvee: true; citation: string }
+  | {
+      trouvee: true;
+      citation: string;
+      /**
+       * true si le modele avait recopie la citation a l'identique, false s'il
+       * a fallu passer par la normalisation des blancs, des apostrophes ou de
+       * la casse pour la retrouver. C'est un signal de fidelite de recopie, et
+       * il pese dans le calcul de la confiance.
+       */
+      exacte: boolean;
+    }
   | { trouvee: false; motif: string };
 
 /**
@@ -102,5 +112,11 @@ export function verifierCitation(textePage: string, citation: string): ResultatC
   const finOrigine = page.index[fin]!;
 
   // On renvoie le texte de la page, jamais celui du modele.
-  return { trouvee: true, citation: textePage.slice(departOrigine, finOrigine + 1) };
+  const citationDeLaPage = textePage.slice(departOrigine, finOrigine + 1);
+
+  return {
+    trouvee: true,
+    citation: citationDeLaPage,
+    exacte: citationDeLaPage === citationNette,
+  };
 }

@@ -79,7 +79,16 @@ export type OptionsAppel<T> = {
 };
 
 export type ResultatAppel<T> =
-  | { statut: "ok"; valeur: T; modele: Modele; tokens: number; dureeMs: number; depuisLeCache: boolean }
+  | {
+      statut: "ok";
+      valeur: T;
+      modele: Modele;
+      tokens: number;
+      dureeMs: number;
+      depuisLeCache: boolean;
+      /** Nombre de reprises qu'il a fallu pour obtenir une sortie valide. */
+      reprises: number;
+    }
   | { statut: "indetermine"; motif: string; modele: Modele; tokens: number };
 
 type ReponseService = {
@@ -120,6 +129,8 @@ export async function appelerModele<T>(options: OptionsAppel<T>): Promise<Result
         tokens: 0,
         dureeMs: 0,
         depuisLeCache: true,
+        // Une entree en cache est une sortie qui avait fini par etre valide.
+        reprises: 0,
       };
     }
     // Entree devenue incompatible avec le schema : on la jette.
@@ -186,6 +197,7 @@ export async function appelerModele<T>(options: OptionsAppel<T>): Promise<Result
         tokens: reponse.tokens,
         dureeMs,
         depuisLeCache: false,
+        reprises: tentative,
       };
     }
 

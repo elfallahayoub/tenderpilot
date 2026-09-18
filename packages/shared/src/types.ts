@@ -77,7 +77,10 @@ export type Requirement = {
   type: TypeExigence;
   categorie: CategorieExigence;
   fait: Fait | null;
+  /** Calculee par le code a partir de signaux objectifs, jamais par le modele. */
   confiance: number;
+  /** Detail du calcul, pour que le score soit explicable a l ecran. */
+  confiance_detail: string | null;
 };
 
 // --- Journal d'agent --------------------------------------------------------

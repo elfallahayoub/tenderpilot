@@ -4,6 +4,7 @@ import { journaliser, journaliserSansBloquer } from "./shared/journal.js";
 import { appelerModele } from "./shared/llm.js";
 import { verifierCitation } from "./shared/citation.js";
 import { construireFait } from "./shared/faits.js";
+import { calculerConfiance, coherenceArticle } from "./shared/confiance.js";
 import { SCHEMA_JSON_EXTRACTION, schemaSortieExtraction } from "./shared/schemas.js";
 import type { ExigenceBrute } from "./shared/schemas.js";
 import { ETAPE_CITATION_INTROUVABLE } from "./shared/types.js";
@@ -14,9 +15,6 @@ const AGENT = "extractor";
 
 /** Plafond de sortie par page. Une page en contient rarement plus de dix. */
 const JETONS_MAX_PAR_PAGE = 4000;
-
-/** Confiance maximale accordee a une exigence dont le fait n'a pu etre construit. */
-const CONFIANCE_SANS_FAIT = 0.5;
 
 export type TravailExtraction = {
   documentId: string;
@@ -97,7 +95,8 @@ Ne remplis que les champs utiles au kind choisi, les autres restent null.
 Si aucun kind ne convient, fait vaut null. Ne force jamais un kind approchant :
 un fait faux est plus grave qu'un fait absent.
 
-confiance : entre 0 et 1, ta certitude sur la lecture de cette exigence.`;
+Tu ne donnes aucune note de confiance : elle est calculee par le code a partir
+de ce qu'il constate, pas a partir de ce que tu declares.`;
 
 /**
  * Extraction des exigences d'un document, page par page.
@@ -178,7 +177,15 @@ export async function traiterExtraction(job: Job<TravailExtraction>): Promise<{
       tokens += resultat.tokens;
 
       for (const brute of resultat.valeur.exigences) {
-        const enregistree = await enregistrer(runId, documentId, page, brute, resultat.modele);
+        const enregistree = await enregistrer(
+          runId,
+          documentId,
+          page,
+          brute,
+          resultat.modele,
+          section,
+          resultat.reprises,
+        );
         if (enregistree) total += 1;
         else rejetees += 1;
       }
@@ -245,6 +252,8 @@ async function enregistrer(
   page: LignePage,
   brute: ExigenceBrute,
   modele: string,
+  section: string | null,
+  reprises: number,
 ): Promise<boolean> {
   // Verification par code : la citation doit exister dans la page annoncee.
   // C'est le seul garde-fou contre l'hallucination, et il ne fait pas confiance.
@@ -256,21 +265,30 @@ async function enregistrer(
   }
 
   const resultatFait = construireFait(brute.fait);
-  let confiance = Math.min(Math.max(brute.confiance, 0), 1);
+  const article = brute.article?.trim() ? brute.article.trim() : null;
 
   if (!resultatFait.ok && brute.fait !== null) {
     // Le modele a cru voir un fait chiffre, le code n'a pas pu le construire.
-    // L'exigence reste affichee, mais sans forme machine et avec une confiance
-    // plafonnee : la tranche 4 ne pourra pas la trancher, et l'interface le dira.
-    confiance = Math.min(confiance, CONFIANCE_SANS_FAIT);
+    // L'exigence reste affichee, mais sans forme machine : la tranche 4 ne
+    // pourra pas la trancher, et le bareme de confiance en tient compte.
     await tracer(runId, `fait non normalisable page ${page.numero}`, 0, "reprise", null, null,
-      `${resultatFait.motif}. Exigence conservee sans forme machine, confiance plafonnee a ${CONFIANCE_SANS_FAIT}.`);
+      `${resultatFait.motif}. Exigence conservee sans forme machine.`);
   }
+
+  // La confiance ne vient plus du modele : elle est calculee a partir de ce que
+  // le code a constate, et elle est donc reproductible et explicable.
+  const confiance = calculerConfiance({
+    citation: verification.exacte ? "exacte" : "normalisee",
+    fait: resultatFait.ok ? "construit" : brute.fait === null ? "non_applicable" : "non_normalisable",
+    article: coherenceArticle(article, section),
+    reprises,
+  });
 
   await pool.query(
     `INSERT INTO requirements
-       (document_id, page_id, numero_page, texte, citation, article, type, categorie, fait, confiance)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
+       (document_id, page_id, numero_page, texte, citation, article, type, categorie, fait,
+        confiance, confiance_detail)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)`,
     [
       documentId,
       page.id,
@@ -280,11 +298,12 @@ async function enregistrer(
       verification.citation,
       // Une chaine vide n'est pas un article : l'interface doit pouvoir dire
       // "article non identifie" plutot qu'afficher un blanc.
-      brute.article?.trim() ? brute.article.trim() : null,
+      article,
       brute.type,
       brute.categorie,
       resultatFait.ok ? JSON.stringify(resultatFait.fait) : null,
-      confiance,
+      confiance.valeur,
+      confiance.justification.join(" ; "),
     ],
   );
 

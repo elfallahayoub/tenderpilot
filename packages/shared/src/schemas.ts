@@ -62,7 +62,8 @@ export const schemaExigenceBrute = z.object({
   article: z.string().nullable(),
   type: z.enum(TYPES_EXIGENCE),
   categorie: z.enum(CATEGORIES_EXIGENCE),
-  confiance: z.number(),
+  // Pas de confiance ici : elle est calculee par le code a partir de signaux
+  // objectifs, dans confiance.ts. Le modele repondait 1 partout.
   fait: schemaFaitBrut.nullable(),
 });
 
@@ -89,7 +90,7 @@ export const SCHEMA_JSON_EXTRACTION = {
       items: {
         type: "object",
         additionalProperties: false,
-        required: ["texte", "citation", "article", "type", "categorie", "confiance", "fait"],
+        required: ["texte", "citation", "article", "type", "categorie", "fait"],
         properties: {
           texte: {
             type: "string",
@@ -106,10 +107,6 @@ export const SCHEMA_JSON_EXTRACTION = {
           },
           type: { type: "string", enum: [...TYPES_EXIGENCE] },
           categorie: { type: "string", enum: [...CATEGORIES_EXIGENCE] },
-          confiance: {
-            type: "number",
-            description: "Entre 0 et 1. Degre de certitude sur la lecture de cette exigence.",
-          },
           fait: {
             type: ["object", "null"],
             additionalProperties: false,

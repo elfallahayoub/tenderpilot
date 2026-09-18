@@ -36,7 +36,7 @@ export async function routesExigences(app: FastifyInstance): Promise<void> {
 
     const exigences = await pool.query(
       `SELECT id, numero_page AS page, texte, citation, article, type, categorie,
-              fait, confiance
+              fait, confiance, confiance_detail
          FROM requirements
         WHERE document_id = $1
         ORDER BY CASE type

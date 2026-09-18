@@ -49,7 +49,7 @@ npm test
 
 Les tests portent sur les règles déterministes, c'est-à-dire sur le code dont
 dépend la justesse des verdicts : la normalisation des nombres, la vérification
-des citations, et la construction des faits machine.
+des citations, la construction des faits machine, et le barème de confiance.
 
 ## Les cinq agents
 
@@ -82,9 +82,9 @@ deux valeurs telles qu'il les lit, sous forme de texte :
 
 C'est une fonction TypeScript pure, `normaliserNombre`, testée unitairement, qui
 rend 60 et 85. Aucun chiffre du verdict ne sort d'un prompt. Le corollaire est
-tout aussi important : quand la conversion échoue, le fait vaut `null`, la
-confiance est plafonnée, et l'exigence reste affichée sans forme machine. Le
-système préfère dire qu'il ne sait pas.
+tout aussi important : quand la conversion échoue, le fait vaut `null` et
+l'exigence reste affichée sans forme machine, avec une confiance abaissée en
+conséquence. Le système préfère dire qu'il ne sait pas.
 
 **Aucune citation n'est crue sur parole.** Le modèle doit recopier l'extrait
 littéral. Le code cherche ensuite cet extrait dans le texte de la page
@@ -93,6 +93,30 @@ modèle. Une citation introuvable est une hallucination : l'exigence est rejeté
 et l'événement est journalisé sous un libellé dédié, ce qui en fait un
 indicateur mesurable. Lors de la mise au point, ce garde-fou a rejeté quatre
 exigences dont le modèle avait reformulé les lignes d'un tableau en phrase.
+
+**La confiance est calculée, pas déclarée.** Le modèle répondait 1 sur chaque
+exigence, ce qui n'informait personne. Elle est désormais calculée par le code à
+partir de ce qu'il constate au moment d'enregistrer l'exigence, donc
+reproductible et explicable ligne à ligne. Le détail du calcul est affiché dans
+l'interface.
+
+| Signal | Points |
+|---|---|
+| socle | 0,40 |
+| citation recopiée à l'identique | +0,30 |
+| citation retrouvée après normalisation des blancs ou de la casse | +0,15 |
+| fait machine construit | +0,15 |
+| aucun fait proposé, exigence non chiffrable | +0,05 |
+| fait proposé mais non normalisable | +0,00 |
+| article identifié et cohérent avec la section calculée | +0,10 |
+| article identifié, cohérence indéterminable | +0,05 |
+| article absent, ou en contradiction avec la section | +0,00 |
+| page obtenue sans reprise du modèle | +0,05 |
+| page ayant demandé une reprise ou plus | +0,00 |
+
+Le maximum vaut exactement 1. Le minimum d'une exigence retenue vaut 0,40 :
+en dessous, la citation serait introuvable et l'exigence aurait été rejetée
+plutôt que notée.
 
 **Le document entier n'entre jamais dans un prompt.** Un appel par page
 lisible, plus une ligne de contexte calculée par le code : le titre de section
@@ -126,7 +150,7 @@ Sur AO-2026-001, sept pages, dix-neuf exigences extraites :
 |---|---|
 | Citations présentes mot pour mot dans la page annoncée | 19 sur 19 |
 | Page annoncée cohérente avec la page source | 19 sur 19 |
-| Tests unitaires des règles déterministes | 31 sur 31 |
+| Tests unitaires des règles déterministes | 39 sur 39 |
 | Jetons consommés pour un avis complet | environ 27 000 |
 
 Sur AO-2026-004, scan sans couche texte : zéro exigence extraite, quatre pages

@@ -40,3 +40,12 @@ COMMENT ON COLUMN requirements.citation IS
   'Sous-chaine exacte du texte de la page, verifiee par verifierCitation.';
 COMMENT ON COLUMN requirements.fait IS
   'Forme machine. Tous les nombres viennent de normaliserNombre, jamais du modele.';
+
+-- La confiance est calculee par le code (packages/shared/src/confiance.ts) a
+-- partir de signaux objectifs, jamais declaree par le modele. On conserve le
+-- detail du calcul pour que le score soit explicable a l'ecran.
+ALTER TABLE requirements
+  ADD COLUMN IF NOT EXISTS confiance_detail text;
+
+COMMENT ON COLUMN requirements.confiance IS
+  'Calculee par calculerConfiance a partir de signaux constates, jamais par le modele.';

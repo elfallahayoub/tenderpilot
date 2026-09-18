@@ -146,7 +146,10 @@ function LigneExigence(props: {
         <span className={`type type--${exigence.type}`}>{exigence.type}</span>
         <span className="exigence__texte">{exigence.texte}</span>
         <span className="exigence__page">p. {exigence.page}</span>
-        <span className="exigence__confiance" title="confiance de lecture">
+        <span
+          className="exigence__confiance"
+          title={exigence.confiance_detail ?? "confiance calculee par le code"}
+        >
           {Math.round(exigence.confiance * 100)} %
         </span>
       </button>
@@ -167,6 +170,12 @@ function LigneExigence(props: {
               ouvrir le PDF page {exigence.page}
             </a>
           </p>
+          {exigence.confiance_detail && (
+            <p className="exigence__bareme">
+              Confiance {Math.round(exigence.confiance * 100)} % :{" "}
+              {exigence.confiance_detail}
+            </p>
+          )}
         </div>
       )}
     </li>
