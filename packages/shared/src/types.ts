@@ -150,6 +150,68 @@ export type AgentEvent = {
 };
 
 /**
+ * Prefixe des etapes d'OCR. Le recapitulatif agrege le temps de
+ * reconnaissance en filtrant dessus : la chaine est donc definie ici et
+ * utilisee des deux cotes, jamais recopiee.
+ */
+export const PREFIXE_ETAPE_OCR = "OCR page ";
+
+/** Libelle affiche a la place du modele quand l'etape est du code pur. */
+export const LIBELLE_CODE_SEUL = "code seul";
+
+/** Un evenement tel que l'interface le recoit, decalage calcule. */
+export type EvenementJournal = {
+  sequence: number;
+  horodatage: string;
+  agent: string;
+  etape: string;
+  modele: string | null;
+  tokens: number | null;
+  dureeMs: number;
+  statut: StatutEvenement;
+  detail: string;
+  /** Millisecondes ecoulees depuis le premier evenement du traitement. */
+  decalageMs: number;
+};
+
+export type LigneModele = {
+  /** "gpt-4.1", "gpt-5.5", ou LIBELLE_CODE_SEUL. */
+  modele: string;
+  appels: number;
+  jetons: number;
+};
+
+/**
+ * Recapitulatif d'un traitement, calcule depuis agent_events.
+ *
+ * Les trois durees affichees ne se recouvrent pas et se lisent ensemble :
+ * `dureeTotaleMs` va du premier au dernier evenement, attente en file
+ * comprise ; `tempsModelesMs` est le temps passe dans les modeles ;
+ * `tempsOcrMs` celui passe en reconnaissance optique.
+ *
+ * On ne somme PAS toutes les durees d'etape : les etapes de synthese, comme
+ * "extraction terminee", portent la duree de tout ce qu'elles resument, et le
+ * total depasserait la duree reelle.
+ */
+export type Recapitulatif = {
+  evenements: number;
+  dureeTotaleMs: number;
+  tempsModelesMs: number;
+  parModele: LigneModele[];
+  /** Appels ayant reellement consomme des jetons. */
+  appelsFactures: number;
+  /** Appels resolus par le cache Redis, donc gratuits. */
+  appelsServisParLeCache: number;
+  etapesCodeSeul: number;
+  tempsOcrMs: number;
+  /** Indicateur d'hallucination : exigences rejetees faute de citation. */
+  citationsRejetees: number;
+  reprises: number;
+  escalades: number;
+};
+
+
+/**
  * Libelle d'etape reserve au rejet d'une exigence dont la citation est
  * introuvable dans la page annoncee. C'est l'indicateur d'hallucination :
  * la page Qualite de la tranche 9 le compte en filtrant sur cette valeur

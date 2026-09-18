@@ -2,7 +2,8 @@ import { useRef, useState } from "react";
 import { deposerDocument } from "./api";
 
 type Props = {
-  onDepot: (message: string) => void;
+  /** Le second argument selectionne le document depose. */
+  onDepot: (message: string, documentId: string) => void;
 };
 
 /**
@@ -27,6 +28,7 @@ export function ZoneDepot({ onDepot }: Props) {
         reponse.dejaConnu
           ? `${reponse.document.nom_fichier} etait deja connu, aucun retraitement.`
           : `${reponse.document.nom_fichier} depose, traitement en file.`,
+        reponse.document.id,
       );
     } catch (cause) {
       setErreur(cause instanceof Error ? cause.message : String(cause));

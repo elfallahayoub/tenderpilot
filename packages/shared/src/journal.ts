@@ -52,3 +52,14 @@ export async function journaliserSansBloquer(evenement: Evenement): Promise<void
     );
   }
 }
+
+/**
+ * REGLE : `modele` et `tokens` ne sont renseignes QUE par llm.ts, seul module
+ * qui appelle reellement un service de modele.
+ *
+ * Les agents journalisent leurs propres etapes de synthese avec modele et
+ * tokens a null, meme lorsqu'ils viennent de lire le resultat d'un appel. Une
+ * premiere version recopiait ces valeurs, et le recapitulatif comptait alors
+ * dix-huit appels a gpt-4.1 pour sept pages, jetons doubles compris. Un chiffre
+ * faux vaut moins que pas de chiffre.
+ */

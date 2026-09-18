@@ -172,7 +172,7 @@ export async function traiterExtraction(job: Job<TravailExtraction>): Promise<{
         tokens += resultat.tokens;
         // L'appel a deja journalise son escalade. Aucune exigence n'est
         // deduite de cette page, et on le dit plutot que de faire silence.
-        await tracer(runId, `page ${page.numero} non analysee`, 0, "escalade", resultat.modele, null,
+        await tracer(runId, `page ${page.numero} non analysee`, 0, "escalade", null, null,
           `${resultat.motif}. Cette page ne produit aucune exigence, revue humaine necessaire.`);
         continue;
       }
@@ -193,8 +193,11 @@ export async function traiterExtraction(job: Job<TravailExtraction>): Promise<{
         else rejetees += 1;
       }
 
-      await tracer(runId, `page ${page.numero} analysee`, resultat.dureeMs, "succes", resultat.modele,
-        resultat.tokens, `${resultat.valeur.exigences.length} exigences proposees${section ? `, section ${section}` : ""}`);
+      // Ni modele ni jetons ici : llm.ts les a deja journalises pour cet
+      // appel. Les recopier doublerait le compte d appels et de jetons du
+      // recapitulatif. Cette etape-ci est un resume, donc du code pur.
+      await tracer(runId, `page ${page.numero} analysee`, 0, "succes", null, null,
+        `${resultat.valeur.exigences.length} exigences proposees${section ? `, section ${section}` : ""}, ${resultat.tokens} jetons sur ${resultat.modele}`);
     }
 
     await majStatut(documentId, "termine", null);
@@ -203,8 +206,8 @@ export async function traiterExtraction(job: Job<TravailExtraction>): Promise<{
     await tracer(runId, "qualification mise en file", 0, "succes", null, null,
       "relais vers l agent qualifier");
 
-    await tracer(runId, "extraction terminee", Math.round(performance.now() - debutTotal), "succes", null, tokens,
-      `${total} exigences retenues, ${rejetees} rejetees, ${pagesLues} pages analysees, ${pagesIgnorees} ignorees${
+    await tracer(runId, "extraction terminee", Math.round(performance.now() - debutTotal), "succes", null, null,
+      `${total} exigences retenues, ${rejetees} rejetees, ${pagesLues} pages analysees, ${tokens} jetons, ${pagesIgnorees} ignorees${
         numerosIgnores.length > 0 ? ` (pages ${numerosIgnores.join(", ")})` : ""
       }`);
 
@@ -266,8 +269,8 @@ async function enregistrer(
   // C'est le seul garde-fou contre l'hallucination, et il ne fait pas confiance.
   const verification = verifierCitation(page.texte, brute.citation);
   if (!verification.trouvee) {
-    await tracer(runId, ETAPE_CITATION_INTROUVABLE, 0, "echec", modele, null,
-      `page ${page.numero} : ${verification.motif}. Exigence rejetee : "${brute.texte.slice(0, 120)}"`);
+    await tracer(runId, ETAPE_CITATION_INTROUVABLE, 0, "echec", null, null,
+      `page ${page.numero} : ${verification.motif}. Exigence rejetee, proposee par ${modele} : "${brute.texte.slice(0, 120)}"`);
     return false;
   }
 

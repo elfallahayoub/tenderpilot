@@ -7,6 +7,9 @@
 export type {
   CategorieExigence,
   Document,
+  EvenementJournal,
+  LigneModele,
+  Recapitulatif,
   Fait,
   OrigineEvaluation,
   Page,
@@ -19,6 +22,8 @@ export type {
 } from "./shared/types";
 
 export {
+  LIBELLE_CODE_SEUL,
+  PREFIXE_ETAPE_OCR,
   LIBELLE_CATEGORIE,
   LIBELLE_ORIGINE,
   LIBELLE_STATUT_EVALUATION,

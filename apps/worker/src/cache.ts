@@ -46,6 +46,53 @@ export async function ecrireCache(hash: string, pages: PageEnregistree[]): Promi
   await connexion.set(cle(hash), JSON.stringify(pages), "EX", DUREE_CACHE_SECONDES);
 }
 
+/**
+ * Cache OCR, par PAGE et non par document.
+ *
+ * Le cache d'ingestion ci-dessus ne s'ecrit qu'une fois le document entier
+ * traite. Une reprise apres incident, survenue au milieu des quatre pages d'un
+ * scan, recommencerait donc toute la reconnaissance. A vingt a quarante
+ * secondes la page, cela se voit. La granularite est ici la page.
+ */
+const DUREE_CACHE_OCR_SECONDES = 30 * 24 * 60 * 60;
+
+export type OcrEnCache = {
+  texte: string;
+  confianceMoyenne: number;
+  nbMots: number;
+};
+
+function cleOcr(hash: string, numero: number): string {
+  return `ocr:${hash}:${numero}`;
+}
+
+export async function lireCacheOcr(hash: string, numero: number): Promise<OcrEnCache | null> {
+  try {
+    const brut = await connexion.get(cleOcr(hash, numero));
+    return brut === null ? null : (JSON.parse(brut) as OcrEnCache);
+  } catch {
+    // Un cache indisponible ne doit pas empecher de reconnaitre la page.
+    return null;
+  }
+}
+
+export async function ecrireCacheOcr(
+  hash: string,
+  numero: number,
+  resultat: OcrEnCache,
+): Promise<void> {
+  try {
+    await connexion.set(
+      cleOcr(hash, numero),
+      JSON.stringify(resultat),
+      "EX",
+      DUREE_CACHE_OCR_SECONDES,
+    );
+  } catch {
+    // Sans consequence : la page sera simplement reocrisee la prochaine fois.
+  }
+}
+
 export async function fermerCache(): Promise<void> {
   await connexion.quit();
 }

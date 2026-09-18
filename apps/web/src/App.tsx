@@ -4,6 +4,7 @@ import { ZoneDepot } from "./ZoneDepot";
 import { ListeDocuments } from "./ListeDocuments";
 import { VueDocument } from "./VueDocument";
 import { Matrice } from "./Matrice";
+import { Journal } from "./Journal";
 import { enCours, type Document, type Sante } from "./types";
 
 type Onglet = "matrice" | "pages";
@@ -74,8 +75,12 @@ export function App() {
       </header>
 
       <ZoneDepot
-        onDepot={(texte) => {
+        onDepot={(texte, documentId) => {
           setMessage(texte);
+          // Le depot selectionne le document : le journal se met a defiler
+          // sans clic supplementaire, ce qui est le chemin de la demonstration.
+          setSelection(documentId);
+          setOnglet("matrice");
           void rafraichir();
         }}
       />
@@ -124,6 +129,17 @@ export function App() {
             <p className="vide">Choisissez un avis pour voir sa matrice de conformite.</p>
           )}
         </div>
+
+        <aside className="colonne colonne--journal">
+          {documentSelectionne ? (
+            <Journal document={documentSelectionne} />
+          ) : (
+            <p className="vide">
+              Le journal de l'agent s'affiche ici : chaque etape, le modele qui l'a
+              traitee, ses jetons et sa duree.
+            </p>
+          )}
+        </aside>
       </div>
     </main>
   );

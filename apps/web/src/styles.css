@@ -8,6 +8,17 @@
   --rouge: #b3261e;
   --ambre: #9a6700;
   --gris: #b6b6b0;
+  /* Pastilles de modele : trois teintes franchement separees, choisies pour
+     rester distinctes sur une video regardee en petit. */
+  --bleu: #17518f;
+  --bleu-fond: #e3edfa;
+  --sarcelle: #0e6465;
+  --sarcelle-fond: #ddefef;
+  /* Reserve au rejet de citation, l indicateur d hallucination. */
+  --violet: #6d28a8;
+  --violet-fond: #f1e9fa;
+  --rouge-fond: #fdeceb;
+  --ambre-fond: #fdf4e3;
 }
 
 * {
@@ -22,7 +33,7 @@ body {
 }
 
 .page {
-  max-width: 1100px;
+  max-width: 1480px;
   margin: 0 auto;
   padding: 32px 16px 64px;
 }
@@ -147,10 +158,21 @@ body {
 
 .colonnes {
   display: grid;
-  grid-template-columns: 320px 1fr;
+  grid-template-columns: 290px minmax(0, 1fr) 380px;
   gap: 24px;
   margin-top: 24px;
   align-items: start;
+}
+
+/* Le journal repasse sous le detail avant de se tasser : la lisibilite prime
+   sur la densite, ce panneau est destine a etre filme. */
+@media (max-width: 1280px) {
+  .colonnes {
+    grid-template-columns: 290px minmax(0, 1fr);
+  }
+  .colonne--journal {
+    grid-column: 1 / -1;
+  }
 }
 
 @media (max-width: 860px) {
@@ -732,4 +754,268 @@ body {
 
 .page-doc__qualite {
   color: var(--ambre);
+}
+
+/* =====================================================================
+   Journal de l'agent
+
+   Ce panneau est filme, et la video sera regardee en petit. Partout ou la
+   densite et la lisibilite s'opposaient, la densite a ete sacrifiee :
+   corps de texte a 13 px au minimum, liserés larges, pastilles contrastees.
+   ===================================================================== */
+
+.colonne--journal {
+  position: sticky;
+  top: 16px;
+}
+
+.journal {
+  border: 1px solid var(--trait);
+  border-radius: 8px;
+  background: var(--carte);
+  overflow: hidden;
+}
+
+.journal__entete {
+  padding: 14px 16px 12px;
+  border-bottom: 1px solid var(--trait);
+}
+
+.journal__titre {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0;
+  font-size: 15px;
+}
+
+.journal__direct {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--vert);
+  border: 1px solid var(--vert);
+  border-radius: 9px;
+  padding: 1px 7px;
+}
+
+.journal__sous-titre {
+  margin: 4px 0 0;
+  font-size: 13px;
+  color: var(--discret);
+  word-break: break-all;
+}
+
+/* --- recapitulatif --- */
+
+.recap {
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--trait);
+  background: #fbfbf9;
+}
+
+.recap__chiffres {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px 14px;
+  margin-bottom: 14px;
+}
+
+.chiffre {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.chiffre__valeur {
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 1.15;
+  font-variant-numeric: tabular-nums;
+}
+
+.chiffre__libelle {
+  font-size: 12px;
+  color: var(--discret);
+}
+
+.recap__modeles {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.recap__modeles td {
+  padding: 4px 0;
+  vertical-align: middle;
+}
+
+.recap__appels {
+  text-align: right;
+  padding-right: 10px !important;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.recap__jetons {
+  text-align: right;
+  color: var(--discret);
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.recap__notes {
+  margin: 10px 0 0;
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--discret);
+}
+
+.recap__alerte {
+  color: var(--ambre);
+  font-weight: 600;
+}
+
+.recap__citation {
+  color: var(--violet);
+  font-weight: 600;
+}
+
+/* --- pastilles de modele ---
+   Trois teintes seulement, franchement separees, avec un fond plein pour
+   tenir le contraste a petite taille. */
+
+.modele {
+  display: inline-block;
+  /* Element central de la demonstration du routage : jamais sous 13 px,
+     meme si cela coute de la densite. */
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  padding: 2px 8px;
+  border-radius: 10px;
+  white-space: nowrap;
+}
+
+.modele--gpt-4-1 {
+  color: var(--bleu);
+  background: var(--bleu-fond);
+}
+
+.modele--gpt-5-5 {
+  color: var(--sarcelle);
+  background: var(--sarcelle-fond);
+}
+
+.modele--code {
+  color: var(--discret);
+  background: #ececeA;
+}
+
+/* --- liste des etapes --- */
+
+.journal__liste {
+  list-style: none;
+  margin: 0;
+  padding: 8px;
+  max-height: calc(100vh - 340px);
+  min-height: 220px;
+  overflow-y: auto;
+  scroll-behavior: smooth;
+}
+
+.etape {
+  border-left: 5px solid var(--trait);
+  border-radius: 0 4px 4px 0;
+  padding: 9px 12px;
+  margin-bottom: 4px;
+  background: var(--carte);
+}
+
+/* Les trois etats qui comptent se reconnaissent au liseré seul, sans lire :
+   ambre pour une reprise, rouge pour une escalade, violet pour un rejet de
+   citation. Les deux derniers ajoutent un fond teinte. */
+.etape--reprise {
+  border-left-color: var(--ambre);
+}
+
+.etape--escalade {
+  border-left-color: var(--rouge);
+  background: var(--rouge-fond);
+}
+
+.etape--echec {
+  border-left-color: var(--rouge);
+  background: var(--rouge-fond);
+}
+
+.etape--citation {
+  border-left-color: var(--violet);
+  background: var(--violet-fond);
+}
+
+.etape__haut {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.etape__decalage {
+  font-size: 12px;
+  color: var(--discret);
+  font-variant-numeric: tabular-nums;
+  min-width: 52px;
+}
+
+.etape__agent {
+  font-size: 13px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--texte);
+}
+
+.etape__nom {
+  margin: 5px 0 0;
+  font-size: 13px;
+  line-height: 1.4;
+  font-weight: 600;
+}
+
+.etape__bas {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  margin-top: 4px;
+  font-size: 12px;
+  color: var(--discret);
+  font-variant-numeric: tabular-nums;
+}
+
+.etape__statut {
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.etape__statut--reprise {
+  color: var(--ambre);
+}
+
+.etape__statut--escalade,
+.etape__statut--echec {
+  color: var(--rouge);
+}
+
+.etape__statut--citation {
+  color: var(--violet);
+}
+
+.etape__detail {
+  margin: 5px 0 0;
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--discret);
 }

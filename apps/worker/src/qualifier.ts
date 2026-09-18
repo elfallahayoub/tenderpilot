@@ -278,7 +278,7 @@ export async function traiterQualification(job: Job<TravailQualification>): Prom
     const reserves = await analyserReserves(documentId, runId);
     await enregistrerVerdict(documentId, bilan.verdict, annee, reserves);
 
-    await tracer(runId, "verdict", Math.round(performance.now() - debutTotal), "succes", null, tokens,
+    await tracer(runId, "verdict", Math.round(performance.now() - debutTotal), "succes", null, null,
       `${bilan.verdict === "go" && reserves.motifs.length > 0 ? "GO SOUS RESERVE" : bilan.verdict.toUpperCase()}` +
         ` : ${bilan.bloquants} bloquants, ${bilan.indetermines} indetermines, ` +
         `${lignes.length} exigences evaluees, annee de reference ${annee.annee} (${annee.origine})` +
@@ -474,7 +474,7 @@ async function normaliser(
   const construit = construireFait(resultat.valeur.fait);
   if (!construit.ok) {
     await tracer(runId, `seconde normalisation sans resultat page ${exigence.numero_page}`, 0,
-      "succes", resultat.modele, null,
+      "succes", null, null,
       `${construit.motif}. L'exigence restera indeterminee plutot que devinee.`);
     return { fait: null, tokens: resultat.tokens, modele: resultat.modele };
   }
@@ -511,8 +511,10 @@ async function arbitrer(
   // succes : le modele ne peut pas designer ce qui n'existe pas.
   const valide = Number.isInteger(indice) && indice >= -1 && indice < demande.candidats.length;
 
-  await tracer(runId, `arbitrage rendu page ${exigence.numero_page}`, 0, "succes", resultat.modele,
-    resultat.tokens,
+  // llm.ts a deja journalise l appel lui-meme, avec son modele et ses jetons.
+  // Cette etape n est que la lecture du resultat par le code.
+  await tracer(runId, `arbitrage rendu page ${exigence.numero_page}`, 0, "succes", null,
+    null,
     valide
       ? indice === -1
         ? `"${demande.exige}" n'a aucun equivalent au profil. ${justification}`

@@ -3,10 +3,11 @@ import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { pool } from "./shared/db.js";
 import { journaliser, journaliserSansBloquer } from "./shared/journal.js";
+import { PREFIXE_ETAPE_OCR } from "./shared/types.js";
 import type { StatutEvenement } from "./shared/types.js";
 import { fileExtraction } from "./files.js";
 import { ouvrirDocument, PdfInvalide } from "./extraction.js";
-import { ecrireCache, lireCache } from "./cache.js";
+import { ecrireCache, ecrireCacheOcr, lireCache, lireCacheOcr } from "./cache.js";
 import {
   ocriserPage,
   SEUIL_CARACTERES_OCR,
@@ -133,7 +134,21 @@ export async function traiterIngestion(job: Job<TravailIngestion>): Promise<Resu
       }
 
       for (const page of aOcriser) {
-        const resultat = await ocriserPage(chemin, page.numero);
+        // Le cache est par page : une reprise apres incident ne refait pas les
+        // reconnaissances deja abouties.
+        const enCacheOcr = await lireCacheOcr(hash, page.numero);
+        const resultat =
+          enCacheOcr === null
+            ? await ocriserPage(chemin, page.numero)
+            : { ...enCacheOcr, dureeMs: 0 };
+        if (enCacheOcr === null) {
+          await ecrireCacheOcr(hash, page.numero, {
+            texte: resultat.texte,
+            confianceMoyenne: resultat.confianceMoyenne,
+            nbMots: resultat.nbMots,
+          });
+        }
+
         const texte = resultat.texte;
         const utile = texte.trim().length;
         const lisible = utile >= SEUIL_CARACTERES_OCR;
@@ -152,9 +167,10 @@ export async function traiterIngestion(job: Job<TravailIngestion>): Promise<Resu
 
         // La duree d'OCR est journalisee par page : elle entrera dans la page
         // Qualite a cote des jetons, comme second poste de cout.
-        await tracer(runId, `OCR page ${page.numero}`, resultat.dureeMs, "succes",
+        await tracer(runId, `${PREFIXE_ETAPE_OCR}${page.numero}`, resultat.dureeMs, "succes",
           lisible
             ? `${page.nbCaracteres} caracteres, ${resultat.nbMots} mots, confiance moyenne ${resultat.confianceMoyenne} sur 100` +
+              (enCacheOcr !== null ? ", relue depuis le cache OCR" : "") +
               (resultat.confianceMoyenne < SEUIL_CONFIANCE_OCR
                 ? `, sous le seuil de ${SEUIL_CONFIANCE_OCR} : lecture incertaine`
                 : "")

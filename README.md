@@ -41,6 +41,13 @@ puisque l'usage des modèles est partagé entre tous les participants.
 `npm run reset:all` repart d'un cache vide, et la prochaine extraction est
 facturée.
 
+**Une évolution de schéma impose `npm run reset`.** Les scripts de `db/init`
+ne rejouent qu'à la création du volume Postgres. C'est sans conséquence
+aujourd'hui, la base ne contenant aucune donnée produite par un humain. Ce ne
+sera plus vrai dès que la revue humaine existera : les corrections de sections
+seront alors une donnée irremplaçable, et il faudra un vrai mécanisme de
+migration plutôt qu'une remise à zéro.
+
 ### Tests
 
 ```bash
@@ -83,6 +90,39 @@ seul, et chaque évaluation porte la trace de son origine :
 
 Cette colonne est affichée dans le détail de chaque exigence. Le routage des
 modèles se démontre ainsi à l'écran, sans avoir à l'expliquer.
+
+### Le journal de l'agent
+
+Un panneau latéral affiche, en direct pendant le traitement puis rejouable
+ensuite, chaque étape du système : l'agent qui l'a exécutée, le modèle employé,
+les jetons consommés et la durée. Les étapes en code pur y figurent au même
+titre que les appels au modèle, sous le libellé `code seul`.
+
+Sur AO-2026-001, le panneau donne ceci en une ligne :
+
+| Modèle | Volume |
+|---|---|
+| gpt-4.1 | 9 appels |
+| gpt-5.5 | 1 appel |
+| code seul | 22 étapes |
+
+Les neuf appels à gpt-4.1 sont les sept extractions de page et deux secondes
+passes de normalisation. L'unique appel à gpt-5.5 est l'arbitrage qui rapproche
+« attestation de la Caisse Nationale de Sécurité Sociale » de « Attestation
+CNSS ». Tout le reste est du code. C'est le routage, chiffré, sans commentaire.
+
+Trois états se repèrent au liseré seul, sans lire : ambre pour une reprise,
+rouge pour une escalade, violet pour une exigence rejetée faute de citation.
+
+**Le journal se rejoue à l'identique.** Une colonne `sequence` donne un ordre
+total d'écriture : relire le journal d'un document traité des semaines plus tôt
+rend exactement la même suite, octet pour octet. L'horodatage seul ne le
+garantissait pas, `now()` rendant l'heure de transaction.
+
+`modele` et `tokens` ne sont renseignés que par le module d'appel au modèle.
+Une première version laissait les agents recopier ces valeurs dans leurs étapes
+de synthèse, et le récapitulatif annonçait dix-huit appels à gpt-4.1 pour sept
+pages. Un chiffre faux vaut moins que pas de chiffre.
 
 ### Avant de déposer un avis
 

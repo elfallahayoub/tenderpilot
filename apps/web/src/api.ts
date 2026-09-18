@@ -1,7 +1,9 @@
 import type {
   Couverture,
   Document,
+  EvenementJournal,
   Page,
+  Recapitulatif,
   Requirement,
   Sante,
   StatutExtraction,
@@ -90,6 +92,20 @@ export type ReponseExigences = {
 
 export async function listerExigences(documentId: string): Promise<ReponseExigences> {
   return lireJson<ReponseExigences>(`/documents/${documentId}/exigences`);
+}
+
+export type ReponseJournal = {
+  evenements: EvenementJournal[];
+  recapitulatif: Recapitulatif;
+  derniereSequence: number;
+};
+
+/**
+ * Journal d'un traitement. `depuis` permet le sondage incremental : seules
+ * les etapes plus recentes que la derniere sequence connue redescendent.
+ */
+export async function lireJournal(documentId: string, depuis = 0): Promise<ReponseJournal> {
+  return lireJson<ReponseJournal>(`/documents/${documentId}/journal?depuis=${depuis}`);
 }
 
 /**
