@@ -1,3 +1,24 @@
+/**
+ * L'interface n'a plus de definitions propres : elle reutilise les contrats
+ * partages, montes depuis packages/shared. Elle n'importe que `types`, jamais
+ * le pool Postgres ni le module de modele, qui n'ont rien a faire dans un
+ * navigateur.
+ */
+export type {
+  CategorieExigence,
+  Document,
+  Fait,
+  Page,
+  Requirement,
+  StatutDocument,
+  StatutExtraction,
+  TypeExigence,
+} from "./shared/types";
+
+export { LIBELLE_CATEGORIE, ORDRE_TYPE } from "./shared/types";
+
+import type { Document, StatutDocument, StatutExtraction } from "./shared/types";
+
 export type EtatDependance = {
   ok: boolean;
   latenceMs: number;
@@ -13,39 +34,40 @@ export type Sante = {
   variablesManquantes: string[];
 };
 
-export type StatutDocument = "recu" | "en_cours" | "traite" | "echec";
-
-export type Document = {
-  id: string;
-  nom_fichier: string;
-  chemin: string;
-  nb_pages: number | null;
-  statut: StatutDocument;
-  hash_sha256: string;
-  motif_echec: string | null;
-  cree_le: string;
-  pages_enregistrees: number;
-  pages_lisibles: number;
-};
-
-export type Page = {
-  id: string;
+export type PageNonLue = {
   numero: number;
-  texte: string;
-  nb_caracteres: number;
-  source: "texte" | "ocr";
-  lisible: boolean;
-  motif_illisible: string | null;
+  motif: string;
 };
 
-/** Un document est encore en mouvement tant qu'il n'est ni traite ni en echec. */
+export type Couverture = {
+  pagesTotal: number;
+  pagesLues: number;
+  pagesNonLues: PageNonLue[];
+};
+
+/** Un document est encore en mouvement tant que la chaine n'est pas achevee. */
 export function enCours(document: Document): boolean {
-  return document.statut === "recu" || document.statut === "en_cours";
+  if (document.statut === "recu" || document.statut === "en_cours") return true;
+  if (document.statut === "echec") return false;
+  return document.statut_extraction === "en_attente" || document.statut_extraction === "en_cours";
 }
 
 export const LIBELLE_STATUT: Record<StatutDocument, string> = {
   recu: "en file",
-  en_cours: "traitement",
-  traite: "traite",
+  en_cours: "lecture",
+  traite: "lu",
   echec: "echec",
+};
+
+export const LIBELLE_EXTRACTION: Record<StatutExtraction, string> = {
+  en_attente: "analyse en attente",
+  en_cours: "analyse en cours",
+  termine: "analyse",
+  echec: "analyse en echec",
+};
+
+export const LIBELLE_TYPE: Record<string, string> = {
+  eliminatoire: "eliminatoire",
+  obligatoire: "obligatoire",
+  optionnelle: "optionnelle",
 };

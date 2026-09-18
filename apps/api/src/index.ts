@@ -3,7 +3,8 @@ import cors from "@fastify/cors";
 import multipart from "@fastify/multipart";
 import { routeSante } from "./routes/health.js";
 import { routesDocuments } from "./routes/documents.js";
-import { fermerPostgres } from "./db.js";
+import { routesExigences } from "./routes/exigences.js";
+import { fermerPostgres } from "./shared/db.js";
 import { fermerRedis } from "./redis.js";
 import { fermerFile } from "./queue.js";
 import { TAILLE_MAX_OCTETS } from "./stockage.js";
@@ -26,6 +27,7 @@ await app.register(multipart, {
 });
 await app.register(routeSante);
 await app.register(routesDocuments);
+await app.register(routesExigences);
 
 app.get("/", async () => ({
   service: "tenderpilot-api",

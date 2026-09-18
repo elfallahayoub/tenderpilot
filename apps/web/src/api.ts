@@ -1,4 +1,11 @@
-import type { Document, Page, Sante } from "./types";
+import type {
+  Couverture,
+  Document,
+  Page,
+  Requirement,
+  Sante,
+  StatutExtraction,
+} from "./types";
 
 const URL_API = import.meta.env.VITE_API_URL ?? "http://localhost:3000";
 
@@ -61,4 +68,25 @@ export async function deposerDocument(fichier: File): Promise<ReponseDepot> {
   }
 
   return corps as ReponseDepot;
+}
+
+export type ReponseExigences = {
+  statutExtraction: StatutExtraction;
+  motifExtraction: string | null;
+  exigences: Requirement[];
+  couverture: Couverture;
+};
+
+export async function listerExigences(documentId: string): Promise<ReponseExigences> {
+  return lireJson<ReponseExigences>(`/documents/${documentId}/exigences`);
+}
+
+/**
+ * URL du PDF d'origine, ancree sur une page. Le lecteur integre des
+ * navigateurs honore #page=N : un clic sur une exigence ouvre donc le document
+ * a la page citee, ce qui est exactement le critere de EX-03.
+ */
+export function urlPdf(documentId: string, page?: number): string {
+  const base = `${URL_API}/documents/${documentId}/fichier`;
+  return page === undefined ? base : `${base}#page=${page}`;
 }

@@ -1,6 +1,6 @@
 import type { FastifyInstance } from "fastify";
 import { assainir, variablesManquantes } from "../env.js";
-import { pingPostgres } from "../db.js";
+import { pingPostgres } from "../shared/db.js";
 import { pingRedis } from "../redis.js";
 
 /** Au-dela, une dependance est declaree muette. Une sonde ne doit jamais pendre. */

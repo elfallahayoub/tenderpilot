@@ -53,6 +53,12 @@ Un raisonnement parfait qu'on ne voit pas ne rapporte rien.
    extraites, journal d'agent et checkpoints LangGraph sont en Postgres.
 7. **Aucune boucle d'agent sans condition d'arrêt.** Nombre maximal
    d'itérations sur chaque nœud, puis escalade à l'humain.
+8. **Le modèle ne produit aucun nombre.** Version forte de la règle 1 : sur
+   chaque fait chiffré, le modèle recopie la valeur telle qu'elle apparaît dans
+   le document ("soixante", "12 778 000.00"), et une fonction TypeScript pure,
+   testée unitairement, la convertit. Un jury peut ainsi vérifier en une ligne
+   qu'aucun chiffre du verdict ne sort d'un prompt. Si la conversion échoue, le
+   fait vaut `null`, la confiance est plafonnée, et rien n'est deviné.
 
 ## 4. Stack
 

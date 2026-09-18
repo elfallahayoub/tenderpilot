@@ -13,5 +13,10 @@
     "isolatedModules": true,
     "forceConsistentCasingInFileNames": true
   },
-  "include": ["src", "vite.config.ts"]
+  "include": ["src", "vite.config.ts"],
+  // Le code partage est monte en entier, mais l'interface n'en importe que les
+  // types. Les modules serveur (pool Postgres, llm, schemas zod, tests) ne sont
+  // donc pas des fichiers racine de ce projet : les inclure reviendrait a
+  // exiger @types/node et zod dans le navigateur.
+  "exclude": ["src/shared/**"]
 }

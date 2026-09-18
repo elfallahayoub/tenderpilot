@@ -1,5 +1,5 @@
 import type { FastifyInstance } from "fastify";
-import { pool } from "../db.js";
+import { pool } from "../shared/db.js";
 import { fileIngestion } from "../queue.js";
 import { ecrireDocument, empreinte } from "../stockage.js";
 
@@ -14,11 +14,15 @@ type LigneDocument = {
   chemin: string;
   nb_pages: number | null;
   statut: "recu" | "en_cours" | "traite" | "echec";
+  statut_extraction: "en_attente" | "en_cours" | "termine" | "echec";
   hash_sha256: string;
   motif_echec: string | null;
+  motif_extraction: string | null;
   cree_le: string;
   pages_enregistrees: number;
   pages_lisibles: number;
+  nb_exigences: number;
+  nb_eliminatoires: number;
 };
 
 /**
@@ -27,10 +31,12 @@ type LigneDocument = {
  * pendant que le worker ecrit les pages une a une.
  */
 const SELECTION = `
-  SELECT d.id, d.nom_fichier, d.chemin, d.nb_pages, d.statut, d.hash_sha256,
-         d.motif_echec, d.cree_le,
+  SELECT d.id, d.nom_fichier, d.chemin, d.nb_pages, d.statut, d.statut_extraction,
+         d.hash_sha256, d.motif_echec, d.motif_extraction, d.cree_le,
          COALESCE(c.total, 0)    AS pages_enregistrees,
-         COALESCE(c.lisibles, 0) AS pages_lisibles
+         COALESCE(c.lisibles, 0) AS pages_lisibles,
+         COALESCE(e.total, 0)         AS nb_exigences,
+         COALESCE(e.eliminatoires, 0) AS nb_eliminatoires
     FROM documents d
     LEFT JOIN LATERAL (
       SELECT count(*)::int AS total,
@@ -38,6 +44,12 @@ const SELECTION = `
         FROM pages p
        WHERE p.document_id = d.id
     ) c ON true
+    LEFT JOIN LATERAL (
+      SELECT count(*)::int AS total,
+             count(*) FILTER (WHERE r.type = 'eliminatoire')::int AS eliminatoires
+        FROM requirements r
+       WHERE r.document_id = d.id
+    ) e ON true
 `;
 
 export async function routesDocuments(app: FastifyInstance): Promise<void> {

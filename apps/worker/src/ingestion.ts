@@ -1,8 +1,10 @@
 import { UnrecoverableError, type Job } from "bullmq";
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
-import { pool } from "./db.js";
-import { journaliser, type StatutEvenement } from "./journal.js";
+import { pool } from "./shared/db.js";
+import { journaliser, journaliserSansBloquer } from "./shared/journal.js";
+import type { StatutEvenement } from "./shared/types.js";
+import { fileExtraction } from "./files.js";
 import { ouvrirDocument, PdfInvalide } from "./extraction.js";
 import { ecrireCache, lireCache } from "./cache.js";
 
@@ -134,6 +136,12 @@ export async function traiterIngestion(job: Job<TravailIngestion>): Promise<Resu
       `${lisibles} pages lues sur ${pages.length}`,
     );
 
+    // La chaine s'enchaine seule : deposer un avis declenche l'extraction.
+    // jobId fixe sur le document : un redepot ne cree pas deux extractions.
+    // BullMQ interdit le deux-points dans un identifiant de travail.
+    await fileExtraction.add("extraire", { documentId }, { jobId: `extraction-${documentId}` });
+    await tracer(runId, "extraction mise en file", 0, "succes", "relais vers l'agent extractor");
+
     return { pages: pages.length, lisibles, depuisLeCache: enCache !== null };
   } catch (erreur) {
     // Le point final des messages pdf.js ferait doublon avec la phrase suivante.
@@ -202,12 +210,7 @@ async function tracerSansBloquer(
   statut: StatutEvenement,
   detail: string,
 ): Promise<void> {
-  try {
-    await tracer(runId, etape, dureeMs, statut, detail);
-  } catch (erreur) {
-    const message = erreur instanceof Error ? erreur.message : String(erreur);
-    console.error(`[ingestor] JOURNAL PERDU pour ${runId} (${etape}) : ${message}`);
-  }
+  await journaliserSansBloquer({ runId, agent: AGENT, etape, modele: null, tokens: null, dureeMs, statut, detail });
 }
 
 /** Ecriture idempotente : une reprise reecrit les memes pages sans doublon. */

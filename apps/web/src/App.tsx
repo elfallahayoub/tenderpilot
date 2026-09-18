@@ -3,7 +3,10 @@ import { listerDocuments, lireSante } from "./api";
 import { ZoneDepot } from "./ZoneDepot";
 import { ListeDocuments } from "./ListeDocuments";
 import { VueDocument } from "./VueDocument";
+import { Matrice } from "./Matrice";
 import { enCours, type Document, type Sante } from "./types";
+
+type Onglet = "matrice" | "pages";
 
 /** Sondage rapproche tant qu'un document bouge, repos ensuite. */
 const PERIODE_ACTIVE_MS = 2000;
@@ -15,6 +18,8 @@ export function App() {
   const [erreur, setErreur] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [selection, setSelection] = useState<string | null>(null);
+  // La matrice est ce que le jury vient voir : elle s'ouvre par defaut.
+  const [onglet, setOnglet] = useState<Onglet>("matrice");
 
   // Evite de relancer le minuteur a chaque rendu.
   const travailEnCours = useRef(false);
@@ -89,9 +94,34 @@ export function App() {
         </div>
         <div className="colonne colonne--detail">
           {documentSelectionne ? (
-            <VueDocument document={documentSelectionne} />
+            <>
+              <nav className="onglets">
+                <button
+                  type="button"
+                  className={onglet === "matrice" ? "onglet onglet--actif" : "onglet"}
+                  onClick={() => setOnglet("matrice")}
+                >
+                  Matrice de conformite
+                  {documentSelectionne.nb_exigences > 0 && (
+                    <span className="onglet__compte">{documentSelectionne.nb_exigences}</span>
+                  )}
+                </button>
+                <button
+                  type="button"
+                  className={onglet === "pages" ? "onglet onglet--actif" : "onglet"}
+                  onClick={() => setOnglet("pages")}
+                >
+                  Pages du document
+                </button>
+              </nav>
+              {onglet === "matrice" ? (
+                <Matrice document={documentSelectionne} />
+              ) : (
+                <VueDocument document={documentSelectionne} />
+              )}
+            </>
           ) : (
-            <p className="vide">Choisissez un avis pour voir ses pages.</p>
+            <p className="vide">Choisissez un avis pour voir sa matrice de conformite.</p>
           )}
         </div>
       </div>

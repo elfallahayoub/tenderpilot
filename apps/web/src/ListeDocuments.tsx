@@ -1,4 +1,4 @@
-import { LIBELLE_STATUT, type Document } from "./types";
+import { LIBELLE_EXTRACTION, LIBELLE_STATUT, type Document } from "./types";
 
 type Props = {
   documents: Document[];
@@ -33,9 +33,26 @@ export function ListeDocuments({ documents, selectionne, onSelection }: Props) {
               </span>
               <span className="document__pages">
                 {total > 0 ? `${document.pages_lisibles} / ${total} pages lues` : "pages inconnues"}
+                {document.statut === "traite" && (
+                  <>
+                    {" · "}
+                    {document.statut_extraction === "termine"
+                      ? `${document.nb_exigences} exigences`
+                      : LIBELLE_EXTRACTION[document.statut_extraction]}
+                    {document.nb_eliminatoires > 0 && (
+                      <span className="document__bloquants">
+                        {" "}
+                        dont {document.nb_eliminatoires} eliminatoires
+                      </span>
+                    )}
+                  </>
+                )}
               </span>
               {document.motif_echec && (
                 <span className="document__motif">{document.motif_echec}</span>
+              )}
+              {document.motif_extraction && (
+                <span className="document__motif">analyse : {document.motif_extraction}</span>
               )}
             </button>
           </li>

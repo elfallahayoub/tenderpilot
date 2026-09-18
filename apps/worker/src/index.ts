@@ -1,16 +1,21 @@
 import { Worker, type Job } from "bullmq";
 import IORedis from "ioredis";
 import { traiterIngestion, type TravailIngestion } from "./ingestion.js";
+import { traiterExtraction, type TravailExtraction } from "./extracteur.js";
+import { FILE_EXTRACTION, FILE_INGESTION, fermerFiles } from "./files.js";
 import { fermerCache } from "./cache.js";
-import { fermerPostgres } from "./db.js";
+import { fermerPostgres } from "./shared/db.js";
+import { fermerLlm } from "./shared/llm.js";
 
 /**
- * Worker BullMQ. Il consomme la file d'ingestion : un depot, un PDF lu page
- * par page, une ligne par page en base, une ligne par etape dans agent_events.
- * L'OCR des scans viendra s'y brancher en tranche 6.
+ * Le worker heberge deux agents.
+ *
+ * "ingestor" lit le PDF page par page, sans jamais appeler de modele.
+ * "extractor" analyse chaque page lisible et produit les exigences, sur
+ * gpt-4.1 uniquement, le routage etant decide dans shared/llm.ts.
+ *
+ * L'ingestion met l'extraction en file : la chaine complete part d'un depot.
  */
-
-export const FILE_INGESTION = "ingestion";
 
 // maxRetriesPerRequest doit valoir null : BullMQ refuse toute autre valeur
 // sur une connexion bloquante.
@@ -22,40 +27,53 @@ connection.on("error", (erreur) => {
   console.error("[worker] erreur Redis :", erreur.message);
 });
 
-async function traiter(job: Job<TravailIngestion>): Promise<unknown> {
-  console.log(`[worker] travail ${job.id} de type "${job.name}" recu`);
-  return traiterIngestion(job);
+const ingesteur = new Worker<TravailIngestion>(
+  FILE_INGESTION,
+  async (job: Job<TravailIngestion>) => {
+    console.log(`[ingestor] travail ${job.id} recu`);
+    return traiterIngestion(job);
+  },
+  { connection, concurrency: 2 },
+);
+
+const extracteur = new Worker<TravailExtraction>(
+  FILE_EXTRACTION,
+  async (job: Job<TravailExtraction>) => {
+    console.log(`[extractor] travail ${job.id} recu`);
+    return traiterExtraction(job);
+  },
+  // Un seul a la fois : l'usage des modeles est partage entre participants.
+  { connection, concurrency: 1 },
+);
+
+for (const [nom, worker] of [
+  ["ingestor", ingesteur],
+  ["extractor", extracteur],
+] as const) {
+  worker.on("ready", () => console.log(`[${nom}] pret`));
+  worker.on("completed", (job, resultat) =>
+    console.log(`[${nom}] travail ${job.id} termine :`, resultat),
+  );
+  worker.on("failed", (job, erreur) =>
+    // Aucune erreur n'est avalee : le statut du document et le journal
+    // d'agent portent deja le motif, la console le repete.
+    console.error(`[${nom}] travail ${job?.id ?? "inconnu"} en echec :`, erreur.message),
+  );
+  worker.on("error", (erreur) => console.error(`[${nom}] erreur :`, erreur.message));
 }
-
-const worker = new Worker<TravailIngestion>(FILE_INGESTION, traiter, {
-  connection,
-  concurrency: 2,
-});
-
-worker.on("ready", () => {
-  console.log(`[worker] pret, a l'ecoute de la file "${FILE_INGESTION}"`);
-});
-
-worker.on("completed", (job, resultat) => {
-  console.log(`[worker] travail ${job.id} termine :`, resultat);
-});
-
-worker.on("failed", (job, erreur) => {
-  // Aucune erreur n'est avalee en silence : le statut du document et le
-  // journal d'agent portent deja le motif, la console le repete.
-  console.error(`[worker] travail ${job?.id ?? "inconnu"} en echec :`, erreur.message);
-});
-
-worker.on("error", (erreur) => {
-  console.error("[worker] erreur :", erreur.message);
-});
 
 /** Arret propre : on laisse les travaux en cours se terminer. */
 async function arreter(signal: string): Promise<void> {
   console.log(`[worker] signal ${signal} recu, arret en cours`);
   try {
-    await worker.close();
-    await Promise.allSettled([connection.quit(), fermerCache(), fermerPostgres()]);
+    await Promise.allSettled([ingesteur.close(), extracteur.close()]);
+    await Promise.allSettled([
+      connection.quit(),
+      fermerFiles(),
+      fermerCache(),
+      fermerLlm(),
+      fermerPostgres(),
+    ]);
   } finally {
     process.exit(0);
   }

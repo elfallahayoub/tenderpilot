@@ -38,6 +38,7 @@ services:
       - "${API_PORT:-3000}:3000"
     volumes:
       - ./apps/api/src:/app/src
+      - ./packages/shared/src:/app/src/shared
       - televersements:/app/televersements
       - ./apps/api/tsconfig.json:/app/tsconfig.json:ro
     depends_on:
@@ -52,6 +53,7 @@ services:
     env_file: .env
     volumes:
       - ./apps/worker/src:/app/src
+      - ./packages/shared/src:/app/src/shared
       - televersements:/app/televersements:ro
       - ./apps/worker/tsconfig.json:/app/tsconfig.json:ro
     depends_on:
@@ -68,8 +70,10 @@ services:
       - "${WEB_PORT:-5173}:5173"
     volumes:
       - ./apps/web/src:/app/src
+      - ./packages/shared/src:/app/src/shared
       - ./apps/web/index.html:/app/index.html:ro
       - ./apps/web/vite.config.ts:/app/vite.config.ts:ro
+      - ./apps/web/tsconfig.json:/app/tsconfig.json:ro
     depends_on:
       - api
 
