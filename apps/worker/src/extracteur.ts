@@ -10,6 +10,7 @@ import type { ExigenceBrute } from "./shared/schemas.js";
 import { ETAPE_CITATION_INTROUVABLE } from "./shared/types.js";
 import type { StatutEvenement } from "./shared/types.js";
 import { sectionCourante } from "./sections.js";
+import { fileQualification } from "./files.js";
 
 const AGENT = "extractor";
 
@@ -195,6 +196,10 @@ export async function traiterExtraction(job: Job<TravailExtraction>): Promise<{
     }
 
     await majStatut(documentId, "termine", null);
+
+    await fileQualification.add("qualifier", { documentId }, { jobId: `qualification-${documentId}` });
+    await tracer(runId, "qualification mise en file", 0, "succes", null, null,
+      "relais vers l agent qualifier");
 
     await tracer(runId, "extraction terminee", Math.round(performance.now() - debutTotal), "succes", null, tokens,
       `${total} exigences retenues, ${rejetees} rejetees, ${pagesLues} pages analysees, ${pagesIgnorees} ignorees${

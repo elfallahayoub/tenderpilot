@@ -15,14 +15,21 @@ type LigneDocument = {
   nb_pages: number | null;
   statut: "recu" | "en_cours" | "traite" | "echec";
   statut_extraction: "en_attente" | "en_cours" | "termine" | "echec";
+  statut_qualification: "en_attente" | "en_cours" | "termine" | "echec";
+  verdict: "go" | "no_go" | null;
+  annee_reference: number | null;
+  origine_annee_reference: string | null;
   hash_sha256: string;
   motif_echec: string | null;
   motif_extraction: string | null;
+  motif_qualification: string | null;
   cree_le: string;
   pages_enregistrees: number;
   pages_lisibles: number;
   nb_exigences: number;
   nb_eliminatoires: number;
+  nb_bloquants: number;
+  nb_indetermines: number;
 };
 
 /**
@@ -32,11 +39,14 @@ type LigneDocument = {
  */
 const SELECTION = `
   SELECT d.id, d.nom_fichier, d.chemin, d.nb_pages, d.statut, d.statut_extraction,
-         d.hash_sha256, d.motif_echec, d.motif_extraction, d.cree_le,
+         d.statut_qualification, d.verdict, d.annee_reference, d.origine_annee_reference,
+         d.hash_sha256, d.motif_echec, d.motif_extraction, d.motif_qualification, d.cree_le,
          COALESCE(c.total, 0)    AS pages_enregistrees,
          COALESCE(c.lisibles, 0) AS pages_lisibles,
          COALESCE(e.total, 0)         AS nb_exigences,
-         COALESCE(e.eliminatoires, 0) AS nb_eliminatoires
+         COALESCE(e.eliminatoires, 0) AS nb_eliminatoires,
+         COALESCE(q.bloquants, 0)     AS nb_bloquants,
+         COALESCE(q.indetermines, 0)  AS nb_indetermines
     FROM documents d
     LEFT JOIN LATERAL (
       SELECT count(*)::int AS total,
@@ -50,6 +60,12 @@ const SELECTION = `
         FROM requirements r
        WHERE r.document_id = d.id
     ) e ON true
+    LEFT JOIN LATERAL (
+      SELECT count(*) FILTER (WHERE v.bloquant)::int AS bloquants,
+             count(*) FILTER (WHERE v.statut = 'indetermine')::int AS indetermines
+        FROM evaluations v
+       WHERE v.document_id = d.id
+    ) q ON true
 `;
 
 export async function routesDocuments(app: FastifyInstance): Promise<void> {

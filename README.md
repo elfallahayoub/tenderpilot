@@ -57,14 +57,40 @@ des citations, la construction des faits machine, et le barème de confiance.
 |---|---|---|---|
 | Ingestor | Lit le PDF page par page, déclare les pages illisibles. | aucun | fait |
 | Extractor | Transforme chaque page en exigences typées et sourcées. | gpt-4.1 | fait |
-| Qualifier | Normalise chaque exigence en fait vérifiable. | gpt-4.1, gpt-5.5 si ambigu | à venir |
+| Qualifier | Évalue chaque exigence contre le profil, prépare le verdict. | gpt-4.1, gpt-5.5 si ambigu | fait |
 | Writer | Rédige le mémoire en citant les références réelles. | gpt-4.1 | à venir |
 | Compliance | Relit contre la checklist administrative. | gpt-4.1 | à venir |
 | Orchestrator | Planifie, relance, escalade à l'humain. | gpt-5.5 | à venir |
 
-Déposer un avis déclenche la chaîne complète. L'ingestion met l'extraction en
-file dès qu'elle a terminé, et chaque étape écrit une ligne dans le journal
-d'agent avec le modèle utilisé, les jetons réellement consommés et la durée.
+Déposer un avis déclenche la chaîne complète : ingestion, puis extraction, puis
+qualification, chacune mettant la suivante en file. Chaque étape écrit une ligne
+dans le journal d'agent avec le modèle utilisé, les jetons réellement consommés
+et la durée.
+
+Le Qualifier ne décide jamais seul. Il lit le profil en base par appel d'outil,
+et c'est le moteur de règles en TypeScript qui compare et produit le verdict.
+Les deux modèles n'interviennent qu'aux endroits où le code ne peut pas trancher
+seul, et chaque évaluation porte la trace de son origine :
+
+| Origine | Ce qui s'est passé |
+|---|---|
+| `deterministe` | Le code a comparé et conclu seul. |
+| `normalisation_gpt41` | Une exigence éliminatoire sans fait machine a fait l'objet d'une seconde passe de normalisation, puis le code a comparé. |
+| `arbitrage_gpt55` | Deux intitulés différents désignaient la même pièce, le modèle l'a établi, le code a conclu. |
+| `non_evaluable` | Aucune forme machine : l'exigence remonte à l'humain. |
+
+Cette colonne est affichée dans le détail de chaque exigence. Le routage des
+modèles se démontre ainsi à l'écran, sans avoir à l'expliquer.
+
+### Avant de déposer un avis
+
+```bash
+npm run seed
+```
+
+Charge le profil d'ATLAS DIGITAL SERVICES, ses 24 références et ses 14 CV en
+base. Le script est idempotent. Sans lui, la qualification échoue explicitement
+au lieu de produire un verdict sur un profil vide.
 
 ## La frontière entre le modèle et le code
 
@@ -122,6 +148,75 @@ plutôt que notée.
 lisible, plus une ligne de contexte calculée par le code : le titre de section
 en vigueur. C'est ce qui permet de rattacher au règlement la phrase isolée de la
 page 3, qui n'a ni en-tête ni grille autour d'elle.
+
+## Décisions de conception
+
+Trois choix demandent une explication, parce qu'ils ne vont pas de soi et qu'on
+peut légitimement en attendre l'inverse.
+
+### Le seuil de note technique reste indéterminé, il ne fait jamais basculer en no-go
+
+L'article 6 de plusieurs avis pose qu'« une note technique inférieure à soixante
+points sur les quatre-vingt-cinq points techniques est éliminatoire ». C'est bien
+une condition éliminatoire, et elle est extraite comme telle.
+
+Elle n'est pourtant jamais évaluée. La raison est qu'elle porte sur une note que
+la commission attribuera à l'offre après dépôt. **C'est une propriété de l'offre
+à venir, pas une propriété de l'entreprise.** Le profil ne contient aucune
+information permettant de la trancher, et aucune n'existe à ce stade. Répondre
+« satisfait » serait une promesse sans fondement, répondre « non satisfait »
+condamnerait à tort tous les avis qui contiennent cette clause, c'est-à-dire la
+plupart.
+
+Le système la classe donc `indetermine`, avec une preuve qui dit pourquoi, et
+l'affiche en tête juste après les points bloquants, comme un point à surveiller
+par l'humain. C'est la seule réponse qui n'invente rien.
+
+### Le comptage des références ne passe jamais par le nom du client
+
+Le jeu de données contient un piège qu'il faut nommer. Dans
+`profil-entreprise.json` :
+
+| Référence | Client | Secteur déclaré |
+|---|---|---|
+| REF-02 | Agence Nationale de Réglementation des Télécommunications | éducation |
+| REF-04 | Ministère de l'Éducation Nationale | énergie |
+
+Un système qui jugerait le secteur d'après le nom du client se tromperait deux
+fois : il écarterait REF-02, qui compte, et retiendrait REF-04, qui ne compte
+pas. Un modèle de langue commettrait cette erreur spontanément, parce qu'elle est
+la lecture la plus naturelle.
+
+Le comptage des références est donc **entièrement déterministe et porte sur la
+colonne `secteur`**, jamais sur le nom du client, et il n'est jamais soumis à
+l'arbitrage d'un modèle. Un test unitaire dédié échoue si cette règle est un jour
+contournée.
+
+### L'année de référence est lue dans l'avis, et le système dit laquelle a servi
+
+« Quatre références exécutées au cours des cinq dernières années » n'a de sens
+que rapporté à une date. La bonne date est celle de la séance publique
+d'ouverture des plis, annoncée en première page. Elle est lue par expression
+régulière en TypeScript, parce que c'est une donnée du document et non une
+interprétation : aucun appel au modèle ne se justifie pour cela.
+
+Quand l'avis ne l'annonce pas, le système retombe sur l'année courante. Dans les
+deux cas, le journal et l'interface affichent l'année retenue et sa provenance,
+`seance_publique` ou `annee_courante`. Un comptage de références dont on ignore
+la date de départ ne vaut rien.
+
+### L'arbitrage du modèle porte sur l'équivalence, jamais sur le verdict
+
+L'avis exige « une attestation de la Caisse Nationale de Sécurité Sociale », le
+profil détient « Attestation CNSS ». Aucune comparaison de chaînes ne les
+rapproche, et pourtant c'est la même pièce.
+
+Quand la correspondance déterministe échoue, le Qualifier pose à gpt-5.5 une
+question fermée : parmi ces pièces détenues, laquelle correspond à la pièce
+exigée, ou aucune. Le modèle rend un indice dans une liste. **Le verdict, lui,
+est produit par le code**, à partir de cet indice. Chaque évaluation porte la
+trace de son origine, `deterministe`, `normalisation_gpt41` ou
+`arbitrage_gpt55`, et cette origine est affichée dans l'interface.
 
 ## Le routage des modèles
 

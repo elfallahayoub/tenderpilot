@@ -27,25 +27,40 @@ export async function routesExigences(app: FastifyInstance): Promise<void> {
     const document = await pool.query<{
       statut_extraction: string;
       motif_extraction: string | null;
+      statut_qualification: string;
+      motif_qualification: string | null;
+      verdict: string | null;
+      annee_reference: number | null;
+      origine_annee_reference: string | null;
       nb_pages: number | null;
-    }>(`SELECT statut_extraction, motif_extraction, nb_pages FROM documents WHERE id = $1`, [id]);
+    }>(
+      `SELECT statut_extraction, motif_extraction, statut_qualification, motif_qualification,
+              verdict, annee_reference, origine_annee_reference, nb_pages
+         FROM documents WHERE id = $1`,
+      [id],
+    );
 
     if (document.rowCount === 0) {
       return reponse.code(404).send({ erreur: "document introuvable" });
     }
 
+    // Les bloquants remontent en tete, avant meme les autres eliminatoires :
+    // c'est ce qui fait perdre le marche, cela se lit en premier.
     const exigences = await pool.query(
-      `SELECT id, numero_page AS page, texte, citation, article, type, categorie,
-              fait, confiance, confiance_detail
-         FROM requirements
-        WHERE document_id = $1
-        ORDER BY CASE type
+      `SELECT r.id, r.numero_page AS page, r.texte, r.citation, r.article, r.type, r.categorie,
+              r.fait, r.confiance, r.confiance_detail,
+              v.statut AS statut_evaluation, v.preuve, v.bloquant, v.origine, v.modele
+         FROM requirements r
+         LEFT JOIN evaluations v ON v.requirement_id = r.id
+        WHERE r.document_id = $1
+        ORDER BY COALESCE(v.bloquant, false) DESC,
+                 CASE r.type
                    WHEN 'eliminatoire' THEN 0
                    WHEN 'obligatoire'  THEN 1
                    ELSE 2
                  END,
-                 categorie ASC,
-                 numero_page ASC`,
+                 r.categorie ASC,
+                 r.numero_page ASC`,
       [id],
     );
 
@@ -61,9 +76,16 @@ export async function routesExigences(app: FastifyInstance): Promise<void> {
 
     const nonLues = pages.rows.filter((page) => !page.lisible);
 
+    const ligne = document.rows[0]!;
+
     return {
-      statutExtraction: document.rows[0]!.statut_extraction,
-      motifExtraction: document.rows[0]!.motif_extraction,
+      statutExtraction: ligne.statut_extraction,
+      motifExtraction: ligne.motif_extraction,
+      statutQualification: ligne.statut_qualification,
+      motifQualification: ligne.motif_qualification,
+      verdict: ligne.verdict,
+      anneeReference: ligne.annee_reference,
+      origineAnneeReference: ligne.origine_annee_reference,
       exigences: exigences.rows,
       couverture: {
         pagesTotal: pages.rowCount,

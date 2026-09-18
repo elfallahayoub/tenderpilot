@@ -9,6 +9,7 @@
     "logs": "docker compose logs -f",
     "reset": "docker compose down && docker volume rm -f tenderpilot_pgdata tenderpilot_televersements && docker compose up -d --build && echo. && echo Base et fichiers remis a zero. Le cache Redis des appels au modele est conserve. && echo Interface : http://localhost:5173",
     "reset:all": "docker compose down -v && docker compose up -d --build && echo. && echo Tout detruit, cache des appels au modele compris. La prochaine extraction sera facturee. && echo Interface : http://localhost:5173",
-    "test": "docker compose exec -T worker npm test"
+    "test": "docker compose exec -T worker npm test",
+    "seed": "docker compose exec -T worker npm run seed"
   }
 }

@@ -2,7 +2,8 @@ import { Worker, type Job } from "bullmq";
 import IORedis from "ioredis";
 import { traiterIngestion, type TravailIngestion } from "./ingestion.js";
 import { traiterExtraction, type TravailExtraction } from "./extracteur.js";
-import { FILE_EXTRACTION, FILE_INGESTION, fermerFiles } from "./files.js";
+import { traiterQualification, type TravailQualification } from "./qualifier.js";
+import { FILE_EXTRACTION, FILE_INGESTION, FILE_QUALIFICATION, fermerFiles } from "./files.js";
 import { fermerCache } from "./cache.js";
 import { fermerPostgres } from "./shared/db.js";
 import { fermerLlm } from "./shared/llm.js";
@@ -13,6 +14,8 @@ import { fermerLlm } from "./shared/llm.js";
  * "ingestor" lit le PDF page par page, sans jamais appeler de modele.
  * "extractor" analyse chaque page lisible et produit les exigences, sur
  * gpt-4.1 uniquement, le routage etant decide dans shared/llm.ts.
+ * "qualifier" evalue chaque exigence contre le profil lu en base et produit le
+ * verdict. Le verdict sort du moteur de regles, jamais d un modele.
  *
  * L'ingestion met l'extraction en file : la chaine complete part d'un depot.
  */
@@ -46,9 +49,19 @@ const extracteur = new Worker<TravailExtraction>(
   { connection, concurrency: 1 },
 );
 
+const qualifieur = new Worker<TravailQualification>(
+  FILE_QUALIFICATION,
+  async (job) => {
+    console.log(`[qualifier] travail ${job.id} recu`);
+    return traiterQualification(job);
+  },
+  { connection, concurrency: 1 },
+);
+
 for (const [nom, worker] of [
   ["ingestor", ingesteur],
   ["extractor", extracteur],
+  ["qualifier", qualifieur],
 ] as const) {
   worker.on("ready", () => console.log(`[${nom}] pret`));
   worker.on("completed", (job, resultat) =>
@@ -66,7 +79,7 @@ for (const [nom, worker] of [
 async function arreter(signal: string): Promise<void> {
   console.log(`[worker] signal ${signal} recu, arret en cours`);
   try {
-    await Promise.allSettled([ingesteur.close(), extracteur.close()]);
+    await Promise.allSettled([ingesteur.close(), extracteur.close(), qualifieur.close()]);
     await Promise.allSettled([
       connection.quit(),
       fermerFiles(),

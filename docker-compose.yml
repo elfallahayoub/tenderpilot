@@ -55,6 +55,7 @@ services:
       - ./apps/worker/src:/app/src
       - ./packages/shared/src:/app/src/shared
       - televersements:/app/televersements:ro
+      - ./data:/app/data:ro
       - ./apps/worker/tsconfig.json:/app/tsconfig.json:ro
     depends_on:
       postgres:

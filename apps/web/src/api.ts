@@ -5,6 +5,7 @@ import type {
   Requirement,
   Sante,
   StatutExtraction,
+  Verdict,
 } from "./types";
 
 const URL_API = import.meta.env.VITE_API_URL ?? "http://localhost:3000";
@@ -73,6 +74,12 @@ export async function deposerDocument(fichier: File): Promise<ReponseDepot> {
 export type ReponseExigences = {
   statutExtraction: StatutExtraction;
   motifExtraction: string | null;
+  statutQualification: StatutExtraction;
+  motifQualification: string | null;
+  /** Produit par le moteur de regles, jamais par un modele. */
+  verdict: Verdict | null;
+  anneeReference: number | null;
+  origineAnneeReference: string | null;
   exigences: Requirement[];
   couverture: Couverture;
 };

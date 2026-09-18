@@ -533,3 +533,128 @@ body {
   font-family: ui-monospace, "Cascadia Mono", monospace;
   line-height: 1.5;
 }
+
+/* --- verdict --- */
+
+.verdict {
+  border: 1px solid var(--trait);
+  border-radius: 8px;
+  background: var(--carte);
+  padding: 16px 18px;
+  margin-bottom: 16px;
+  border-left: 4px solid var(--gris);
+}
+
+.verdict--go {
+  border-left-color: var(--vert);
+}
+
+.verdict--no_go {
+  border-left-color: var(--rouge);
+}
+
+.verdict__titre {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  font-size: 26px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  line-height: 1.1;
+}
+
+.verdict--go .verdict__titre {
+  color: var(--vert);
+}
+
+.verdict--no_go .verdict__titre {
+  color: var(--rouge);
+}
+
+.verdict__source {
+  font-size: 11px;
+  font-weight: 400;
+  letter-spacing: 0;
+  text-transform: uppercase;
+  color: var(--discret);
+}
+
+.verdict__resume {
+  margin: 8px 0 0;
+  font-size: 14px;
+}
+
+.verdict__annee {
+  margin: 6px 0 0;
+  font-size: 12px;
+  color: var(--discret);
+}
+
+/* --- statut d evaluation --- */
+
+.exigence--bloquant {
+  border-left-width: 4px;
+  background: #fffaf9;
+}
+
+.statut {
+  font-size: 11px;
+  white-space: nowrap;
+  color: var(--discret);
+}
+
+.statut--satisfait {
+  color: var(--vert);
+}
+
+.statut--non_satisfait {
+  color: var(--rouge);
+  font-weight: 600;
+}
+
+.statut--indetermine {
+  color: var(--ambre);
+}
+
+.preuve {
+  margin: 0 0 10px;
+  padding: 10px 12px;
+  border-radius: 4px;
+  background: var(--carte);
+  border: 1px solid var(--trait);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.preuve--satisfait {
+  border-left: 3px solid var(--vert);
+}
+
+.preuve--non_satisfait {
+  border-left: 3px solid var(--rouge);
+}
+
+.preuve--indetermine {
+  border-left: 3px solid var(--ambre);
+}
+
+.preuve__origine {
+  display: block;
+  margin-top: 6px;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--discret);
+}
+
+.badge--verdict-go {
+  color: var(--vert);
+  border-color: var(--vert);
+  font-weight: 700;
+}
+
+.badge--verdict-no_go {
+  color: var(--rouge);
+  border-color: var(--rouge);
+  font-weight: 700;
+}

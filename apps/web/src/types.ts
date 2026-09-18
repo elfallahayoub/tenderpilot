@@ -8,14 +8,22 @@ export type {
   CategorieExigence,
   Document,
   Fait,
+  OrigineEvaluation,
   Page,
   Requirement,
   StatutDocument,
+  StatutEvaluation,
   StatutExtraction,
   TypeExigence,
+  Verdict,
 } from "./shared/types";
 
-export { LIBELLE_CATEGORIE, ORDRE_TYPE } from "./shared/types";
+export {
+  LIBELLE_CATEGORIE,
+  LIBELLE_ORIGINE,
+  LIBELLE_STATUT_EVALUATION,
+  ORDRE_TYPE,
+} from "./shared/types";
 
 import type { Document, StatutDocument, StatutExtraction } from "./shared/types";
 
@@ -49,7 +57,13 @@ export type Couverture = {
 export function enCours(document: Document): boolean {
   if (document.statut === "recu" || document.statut === "en_cours") return true;
   if (document.statut === "echec") return false;
-  return document.statut_extraction === "en_attente" || document.statut_extraction === "en_cours";
+  if (document.statut_extraction === "en_attente" || document.statut_extraction === "en_cours") {
+    return true;
+  }
+  if (document.statut_extraction === "echec") return false;
+  return (
+    document.statut_qualification === "en_attente" || document.statut_qualification === "en_cours"
+  );
 }
 
 export const LIBELLE_STATUT: Record<StatutDocument, string> = {

@@ -28,9 +28,15 @@ export function ListeDocuments({ documents, selectionne, onSelection }: Props) {
               onClick={() => onSelection(document.id)}
             >
               <span className="document__nom">{document.nom_fichier}</span>
-              <span className={`badge badge--${document.statut}`}>
-                {LIBELLE_STATUT[document.statut]}
-              </span>
+              {document.verdict ? (
+                <span className={`badge badge--verdict-${document.verdict}`}>
+                  {document.verdict === "go" ? "GO" : "NO-GO"}
+                </span>
+              ) : (
+                <span className={`badge badge--${document.statut}`}>
+                  {LIBELLE_STATUT[document.statut]}
+                </span>
+              )}
               <span className="document__pages">
                 {total > 0 ? `${document.pages_lisibles} / ${total} pages lues` : "pages inconnues"}
                 {document.statut === "traite" && (
@@ -39,10 +45,11 @@ export function ListeDocuments({ documents, selectionne, onSelection }: Props) {
                     {document.statut_extraction === "termine"
                       ? `${document.nb_exigences} exigences`
                       : LIBELLE_EXTRACTION[document.statut_extraction]}
-                    {document.nb_eliminatoires > 0 && (
+                    {document.nb_bloquants > 0 && (
                       <span className="document__bloquants">
                         {" "}
-                        dont {document.nb_eliminatoires} eliminatoires
+                        dont {document.nb_bloquants} bloquant
+                        {document.nb_bloquants > 1 ? "s" : ""}
                       </span>
                     )}
                   </>

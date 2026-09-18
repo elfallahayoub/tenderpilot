@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "nodemon --legacy-watch --watch src --ext ts,json --exec \"tsx src/index.ts\"",
     "build": "tsc --noEmit",
-    "test": "node --import tsx --test src/shared/*.test.ts"
+    "test": "node --import tsx --test src/shared/*.test.ts",
+    "seed": "tsx src/seed.ts"
   },
   "dependencies": {
     "bullmq": "5.81.5",

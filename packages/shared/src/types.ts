@@ -12,6 +12,8 @@ export type StatutDocument = "recu" | "en_cours" | "traite" | "echec";
 
 export type StatutExtraction = "en_attente" | "en_cours" | "termine" | "echec";
 
+export type Verdict = "go" | "no_go";
+
 export type Document = {
   id: string;
   nom_fichier: string;
@@ -19,14 +21,22 @@ export type Document = {
   nb_pages: number | null;
   statut: StatutDocument;
   statut_extraction: StatutExtraction;
+  statut_qualification: StatutExtraction;
+  /** Produit par le moteur de regles, jamais par un modele. */
+  verdict: Verdict | null;
+  annee_reference: number | null;
+  origine_annee_reference: string | null;
   hash_sha256: string;
   motif_echec: string | null;
   motif_extraction: string | null;
+  motif_qualification: string | null;
   cree_le: string;
   pages_enregistrees: number;
   pages_lisibles: number;
   nb_exigences: number;
   nb_eliminatoires: number;
+  nb_bloquants: number;
+  nb_indetermines: number;
 };
 
 export type Page = {
@@ -81,6 +91,37 @@ export type Requirement = {
   confiance: number;
   /** Detail du calcul, pour que le score soit explicable a l ecran. */
   confiance_detail: string | null;
+
+  // --- Evaluation, renseignee une fois la qualification passee -------------
+
+  statut_evaluation: StatutEvaluation | null;
+  /** Preuve chiffree produite par le moteur de regles. */
+  preuve: string | null;
+  bloquant: boolean | null;
+  /** Part revenant au code et part revenant a un modele. */
+  origine: OrigineEvaluation | null;
+  modele: string | null;
+};
+
+export type StatutEvaluation = "satisfait" | "non_satisfait" | "indetermine";
+
+export type OrigineEvaluation =
+  | "deterministe"
+  | "normalisation_gpt41"
+  | "arbitrage_gpt55"
+  | "non_evaluable";
+
+export const LIBELLE_ORIGINE: Record<OrigineEvaluation, string> = {
+  deterministe: "moteur de regles, code seul",
+  normalisation_gpt41: "fait normalise par gpt-4.1, verdict par le code",
+  arbitrage_gpt55: "equivalence arbitree par gpt-5.5, verdict par le code",
+  non_evaluable: "non evaluable automatiquement",
+};
+
+export const LIBELLE_STATUT_EVALUATION: Record<StatutEvaluation, string> = {
+  satisfait: "satisfait",
+  non_satisfait: "non satisfait",
+  indetermine: "indetermine",
 };
 
 // --- Journal d'agent --------------------------------------------------------

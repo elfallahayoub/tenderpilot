@@ -2,6 +2,8 @@ import { useEffect, useState } from "react";
 import { listerExigences, urlPdf, type ReponseExigences } from "./api";
 import {
   LIBELLE_CATEGORIE,
+  LIBELLE_ORIGINE,
+  LIBELLE_STATUT_EVALUATION,
   type CategorieExigence,
   type Document,
   type Fait,
@@ -70,12 +72,20 @@ export function Matrice({ document }: Props) {
     return () => {
       abandonne = true;
     };
-  }, [document.id, document.statut_extraction, document.nb_exigences]);
+  }, [
+    document.id,
+    document.statut_extraction,
+    document.statut_qualification,
+    document.nb_exigences,
+  ]);
 
   if (erreur) return <p className="erreur">Lecture impossible : {erreur}</p>;
   if (donnees === null) return <p className="vide">Lecture de la matrice...</p>;
 
   const { couverture, exigences } = donnees;
+  const bloquants = exigences.filter((exigence) => exigence.bloquant === true);
+  const indetermines = exigences.filter((exigence) => exigence.statut_evaluation === "indetermine");
+
   const groupes = ORDRE_CATEGORIES.map((categorie) => ({
     categorie,
     exigences: exigences.filter((exigence) => exigence.categorie === categorie),
@@ -83,6 +93,42 @@ export function Matrice({ document }: Props) {
 
   return (
     <section>
+      {donnees.verdict !== null && (
+        <div className={`verdict verdict--${donnees.verdict}`}>
+          <div className="verdict__titre">
+            {donnees.verdict === "go" ? "GO" : "NO-GO"}
+            <span className="verdict__source">verdict produit par le moteur de regles</span>
+          </div>
+          <p className="verdict__resume">
+            {bloquants.length === 0
+              ? "Aucun point bloquant : toutes les exigences eliminatoires sont satisfaites."
+              : `${bloquants.length} point${bloquants.length > 1 ? "s" : ""} bloquant${
+                  bloquants.length > 1 ? "s" : ""
+                } : une exigence eliminatoire n'est pas satisfaite.`}
+            {indetermines.length > 0 &&
+              ` ${indetermines.length} exigence${indetermines.length > 1 ? "s" : ""} rest${
+                indetermines.length > 1 ? "ent" : "e"
+              } a verifier par un humain.`}
+          </p>
+          {donnees.anneeReference !== null && (
+            <p className="verdict__annee">
+              Anciennete des references comptee depuis {donnees.anneeReference}
+              {donnees.origineAnneeReference === "seance_publique"
+                ? ", date de la seance publique lue dans l'avis"
+                : ", annee courante faute de date dans l'avis"}
+              .
+            </p>
+          )}
+        </div>
+      )}
+
+      {donnees.statutQualification === "en_cours" && (
+        <p className="info">Evaluation en cours contre le profil d'entreprise.</p>
+      )}
+      {donnees.statutQualification === "echec" && (
+        <p className="erreur">Evaluation en echec : {donnees.motifQualification}</p>
+      )}
+
       <div className={`bandeau ${couverture.pagesNonLues.length > 0 ? "bandeau--alerte" : ""}`}>
         <strong>
           {couverture.pagesLues} pages lues sur {couverture.pagesTotal}
@@ -141,10 +187,21 @@ function LigneExigence(props: {
 }) {
   const { exigence } = props;
   return (
-    <li className={`exigence exigence--${exigence.type}`}>
+    <li
+      className={`exigence exigence--${exigence.type} ${
+        exigence.bloquant ? "exigence--bloquant" : ""
+      }`}
+    >
       <button type="button" className="exigence__entete" onClick={props.onBascule}>
-        <span className={`type type--${exigence.type}`}>{exigence.type}</span>
+        <span className={`type type--${exigence.type}`}>
+          {exigence.bloquant ? "bloquant" : exigence.type}
+        </span>
         <span className="exigence__texte">{exigence.texte}</span>
+        {exigence.statut_evaluation && (
+          <span className={`statut statut--${exigence.statut_evaluation}`}>
+            {LIBELLE_STATUT_EVALUATION[exigence.statut_evaluation]}
+          </span>
+        )}
         <span className="exigence__page">p. {exigence.page}</span>
         <span
           className="exigence__confiance"
@@ -156,6 +213,17 @@ function LigneExigence(props: {
 
       {props.ouverte && (
         <div className="exigence__detail">
+          {exigence.preuve && (
+            <p className={`preuve preuve--${exigence.statut_evaluation}`}>
+              <strong>Preuve :</strong> {exigence.preuve}
+              {exigence.origine && (
+                <span className="preuve__origine">
+                  {LIBELLE_ORIGINE[exigence.origine]}
+                  {exigence.modele ? ` (${exigence.modele})` : ""}
+                </span>
+              )}
+            </p>
+          )}
           <p className="exigence__citation">{exigence.citation}</p>
           <p className="exigence__meta">
             <span>{exigence.article ?? "article non identifie"}</span>
