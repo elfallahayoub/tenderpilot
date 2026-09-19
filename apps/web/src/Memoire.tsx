@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { genererMemoire, lireMemoire, urlDocx, type ReponseMemoire } from "./api";
+import { SectionRevue } from "./SectionRevue";
 import type { Document } from "./types";
 
 type Props = {
@@ -106,43 +107,23 @@ export function Memoire({ document }: Props) {
         </div>
       )}
 
-      {donnees.sections.map((section) => (
-        <article
-          key={section.ordre}
-          className={`section ${section.statut === "a_completer" ? "section--a-completer" : ""}`}
-        >
-          <header className="section__entete">
-            <h3 className="section__titre">
-              {section.ordre}. {section.titre}
-            </h3>
-            {section.statut === "a_completer" ? (
-              <span className="section__marque">a completer</span>
-            ) : (
-              section.tentatives > 1 && (
-                <span className="section__reprise">redigee apres une regeneration</span>
-              )
-            )}
-          </header>
+      {/* Les sections a completer remontent en tete : c est le point d entree
+          naturel de la revue. L export DOCX, lui, garde l ordre du document :
+          un memoire aux sections permutees ne serait pas remettable. */}
+      {[...donnees.sections]
+        .sort((a, b) => {
+          const priorite = (s: typeof a) => (s.statut === "a_completer" ? 0 : 1);
+          return priorite(a) - priorite(b) || a.ordre - b.ordre;
+        })
+        .map((section) => (
+          <SectionRevue
+            key={section.ordre}
+            documentId={document.id}
+            section={section}
+            onChangement={() => void lire()}
+          />
+        ))}
 
-          {section.statut === "a_completer" ? (
-            <p className="section__motif">Motif du rejet : {section.motif}</p>
-          ) : (
-            <>
-              {section.contenu.split("\n\n").map((paragraphe, rang) => (
-                <p key={rang} className="section__texte">
-                  {paragraphe}
-                </p>
-              ))}
-              {section.references_citees.length > 0 && (
-                <p className="section__references">
-                  References citees, toutes verifiees dans references.csv :{" "}
-                  {section.references_citees.join(", ")}
-                </p>
-              )}
-            </>
-          )}
-        </article>
-      ))}
     </section>
   );
 }

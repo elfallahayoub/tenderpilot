@@ -100,11 +100,17 @@ export type SectionMemoire = {
   contenu: string;
   statut: "redigee" | "a_completer";
   motif: string | null;
+  /** La correction humaine, nulle tant que la section n'a pas ete reecrite. */
+  contenu_humain: string | null;
+  statut_revue: StatutRevue;
+  revue_le: string | null;
   references_citees: string[];
   modele: string | null;
   tokens: number | null;
   tentatives: number;
 };
+
+export type StatutRevue = "a_revoir" | "validee" | "corrigee";
 
 export type ReponseMemoire = {
   statutMemoire: "absent" | "en_cours" | "termine" | "echec";
@@ -123,6 +129,31 @@ export async function genererMemoire(documentId: string): Promise<void> {
     const corps = (await reponse.json().catch(() => null)) as { erreur?: unknown } | null;
     throw new Error(corps?.erreur ? String(corps.erreur) : `la generation a echoue (${reponse.status})`);
   }
+}
+
+/** Validation ou correction humaine d'une section. Persistee immediatement. */
+export async function reviserSection(
+  documentId: string,
+  ordre: number,
+  corps: { action: "valider" } | { action: "corriger"; contenu: string },
+): Promise<void> {
+  const reponse = await fetch(`${URL_API}/documents/${documentId}/sections/${ordre}`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(corps),
+  });
+  if (!reponse.ok) {
+    const erreur = (await reponse.json().catch(() => null)) as { erreur?: unknown } | null;
+    throw new Error(erreur?.erreur ? String(erreur.erreur) : `echec (${reponse.status})`);
+  }
+}
+
+/** Seul chemin qui ecrase du travail humain. Il est donc explicite. */
+export async function regenererSection(documentId: string, ordre: number): Promise<void> {
+  const reponse = await fetch(`${URL_API}/documents/${documentId}/sections/${ordre}/regenerer`, {
+    method: "POST",
+  });
+  if (!reponse.ok) throw new Error(`echec (${reponse.status})`);
 }
 
 export function urlDocx(documentId: string): string {

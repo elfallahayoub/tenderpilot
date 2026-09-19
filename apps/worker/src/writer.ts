@@ -3,7 +3,7 @@ import { z } from "zod";
 import { pool } from "./shared/db.js";
 import { journaliser, journaliserSansBloquer } from "./shared/journal.js";
 import { appelerModele, calculerEmbedding, versVecteurSql } from "./shared/llm.js";
-import { chiffresNonSources } from "./shared/chiffres.js";
+import { chiffresNonSources, retirerLesNombres } from "./shared/chiffres.js";
 import { objetDeLAvis } from "./shared/objet.js";
 import { normaliserTexte } from "./shared/regles.js";
 import type { CategorieExigence, StatutEvenement } from "./shared/types.js";
@@ -178,19 +178,43 @@ export async function traiterRedaction(job: Job<TravailRedaction>): Promise<{
       `${SECTIONS.length} sections, ${exigences.length} exigences disponibles, ` +
         `${candidats.length} references candidates, un appel par section`);
 
-    // Une reprise ne doit pas empiler les sections.
-    await pool.query(`DELETE FROM sections_memoire WHERE document_id = $1`, [documentId]);
+    // Une reprise ne doit pas empiler les sections. Mais on ne supprime QUE
+    // celles qui ne portent aucun travail humain : une section validee ou
+    // corrigee survit a une regeneration globale.
+    const protegees = await pool.query<{ ordre: number; titre: string; statut_revue: string }>(
+      `SELECT ordre, titre, statut_revue FROM sections_memoire
+        WHERE document_id = $1 AND statut_revue <> 'a_revoir' ORDER BY ordre`,
+      [documentId],
+    );
+    await pool.query(
+      `DELETE FROM sections_memoire WHERE document_id = $1 AND statut_revue = 'a_revoir'`,
+      [documentId],
+    );
+
+    const nbProtegees = protegees.rows.length;
+    if (nbProtegees > 0) {
+      await tracer(runId, "sections protegees", 0, "succes", null, null,
+        `${nbProtegees} section${nbProtegees > 1 ? "s" : ""} portant du travail humain ` +
+          `${nbProtegees > 1 ? "sont conservees" : "est conservee"} : ` +
+          protegees.rows.map((ligne) => `${ligne.titre} (${ligne.statut_revue})`).join(", "));
+    }
+    const ordresProteges = new Set(protegees.rows.map((ligne) => ligne.ordre));
 
     let aCompleter = 0;
     let rejets = 0;
     let tokens = 0;
 
     for (const section of SECTIONS) {
+      if (ordresProteges.has(section.ordre)) continue;
+
       const resultat = await redigerSection(runId, documentId, section, {
         objet,
         exigences,
         equipe,
         candidats,
+        // Memoire des corrections : ce que l'humain a deja reecrit, dans ce
+        // memoire et dans les traitements precedents.
+        corrections: await lireCorrections(documentId, section.titre, runId),
       });
       tokens += resultat.tokens;
       rejets += resultat.rejets;
@@ -231,7 +255,73 @@ type Matiere = {
   exigences: LigneExigence[];
   equipe: LigneEquipe[];
   candidats: LigneReference[];
+  corrections: Correction[];
 };
+
+export type Correction = {
+  titre: string;
+  texte: string;
+  /** Vrai si la correction vient de ce memoire, faux si d'un traitement anterieur. */
+  memeDocument: boolean;
+};
+
+/**
+ * Corrections humaines a reinjecter.
+ *
+ * Deux sources, qui sont exactement les deux niveaux du cahier des charges :
+ * les sections deja corrigees DANS ce memoire, et la derniere correction
+ * portant sur une section du MEME TITRE dans un traitement anterieur.
+ *
+ * Leurs nombres sont retires avant tout usage. Une correction redigee pour un
+ * marche d'audit ne doit pas voir ses montants ni ses durees migrer dans un
+ * marche de maintenance : elle sert de modele de forme, jamais de contenu.
+ */
+async function lireCorrections(
+  documentId: string,
+  titre: string,
+  runId: string,
+): Promise<Correction[]> {
+  const memeMemoire = await pool.query<{ titre: string; contenu_humain: string }>(
+    `SELECT titre, contenu_humain FROM sections_memoire
+      WHERE document_id = $1 AND statut_revue = 'corrigee' AND contenu_humain IS NOT NULL
+      ORDER BY ordre DESC LIMIT 2`,
+    [documentId],
+  );
+
+  const anterieure = await pool.query<{ titre: string; contenu_humain: string }>(
+    `SELECT titre, contenu_humain FROM sections_memoire
+      WHERE document_id <> $1 AND titre = $2
+        AND statut_revue = 'corrigee' AND contenu_humain IS NOT NULL
+      ORDER BY revue_le DESC LIMIT 1`,
+    [documentId, titre],
+  );
+
+  const corrections: Correction[] = [
+    ...memeMemoire.rows.map((ligne) => ({
+      titre: ligne.titre,
+      texte: retirerLesNombres(ligne.contenu_humain),
+      memeDocument: true,
+    })),
+    ...anterieure.rows.map((ligne) => ({
+      titre: ligne.titre,
+      texte: retirerLesNombres(ligne.contenu_humain),
+      memeDocument: false,
+    })),
+  ];
+
+  if (corrections.length > 0) {
+    await tracer(runId, `corrections humaines reinjectees : ${titre}`, 0, "succes", null, null,
+      corrections
+        .map((correction) =>
+          correction.memeDocument
+            ? `"${correction.titre}" corrigee dans ce memoire`
+            : `"${correction.titre}" corrigee sur un avis anterieur`,
+        )
+        .join(" ; ") + ". Modele de forme uniquement, nombres retires.");
+  }
+
+  return corrections;
+}
 
 async function redigerSection(
   runId: string,
@@ -250,6 +340,7 @@ async function redigerSection(
   // marche n'a rien a faire dans ce memoire.
   const materiau = construireMateriau(matiere.objet, exigences, equipe, candidats);
   const style = await lireExtraitDeStyle(section.titre, runId);
+  const corrections = matiere.corrections;
 
   let tokens = 0;
   let rejets = 0;
@@ -259,7 +350,7 @@ async function redigerSection(
     const resultat = await appelerModele({
       usage: "redaction",
       systeme: SYSTEME,
-      utilisateur: construirePrompt(section, matiere.objet, exigences, equipe, candidats, style, essai > 0 ? dernierMotif : null),
+      utilisateur: construirePrompt(section, matiere.objet, exigences, equipe, candidats, style, corrections, essai > 0 ? dernierMotif : null),
       schema: schemaSection,
       schemaJson: SCHEMA_JSON_SECTION,
       nomSchema: "section_memoire",
@@ -425,6 +516,7 @@ function construirePrompt(
   equipe: LigneEquipe[],
   candidats: LigneReference[],
   style: string | null,
+  corrections: Correction[],
   correction: string | null,
 ): string {
   const morceaux: string[] = [
@@ -457,6 +549,24 @@ function construirePrompt(
       style,
     );
   }
+  if (corrections.length > 0) {
+    // Memoire des corrections. Elles servent de modele de FORME : leurs
+    // nombres ont deja ete retires, et la consigne interdit d'en reprendre le
+    // contenu factuel, qui porte sur un autre marche.
+    morceaux.push(
+      "",
+      "Corrections deja apportees par un relecteur humain. Reprends-en la forme,",
+      "le niveau d'exigence et le vocabulaire. N'en reprends AUCUN fait : elles",
+      "portent sur d'autres sections ou d'autres marches.",
+      ...corrections.map(
+        (exemple) =>
+          `--- ${exemple.titre}${
+            exemple.memeDocument ? "" : ", corrigee sur un avis anterieur"
+          } ---\n${exemple.texte}`,
+      ),
+    );
+  }
+
   if (correction !== null) {
     morceaux.push(
       "",

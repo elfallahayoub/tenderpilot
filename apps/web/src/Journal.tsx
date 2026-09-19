@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { lireJournal } from "./api";
-import { enCours, LIBELLE_CODE_SEUL, type Document } from "./types";
+import { AGENT_HUMAIN, enCours, LIBELLE_CODE_SEUL, type Document } from "./types";
 import type { EvenementJournal, Recapitulatif } from "./types";
 
 type Props = {
@@ -205,10 +205,17 @@ function Chiffre({ valeur, libelle }: { valeur: string; libelle: string }) {
  */
 function Ligne({ evenement }: { evenement: EvenementJournal }) {
   const citationRejetee = evenement.etape.startsWith("exigence rejetee");
-  const marque = citationRejetee ? "citation" : evenement.statut;
+  // Une intervention humaine n est ni un appel au modele ni une etape de code :
+  // elle a sa propre marque, c est la boucle humain-machine rendue visible.
+  const humain = evenement.agent === AGENT_HUMAIN;
+  const marque = humain ? "humain" : citationRejetee ? "citation" : evenement.statut;
 
-  const modele = evenement.modele ?? LIBELLE_CODE_SEUL;
-  const classeModele = evenement.modele === null ? "code" : evenement.modele.replace(".", "-");
+  const modele = humain ? "humain" : (evenement.modele ?? LIBELLE_CODE_SEUL);
+  const classeModele = humain
+    ? "humain"
+    : evenement.modele === null
+      ? "code"
+      : evenement.modele.replace(".", "-");
 
   return (
     <li className={`etape etape--${marque}`}>

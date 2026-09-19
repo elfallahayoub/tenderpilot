@@ -41,12 +41,22 @@ puisque l'usage des modèles est partagé entre tous les participants.
 `npm run reset:all` repart d'un cache vide, et la prochaine extraction est
 facturée.
 
-**Une évolution de schéma impose `npm run reset`.** Les scripts de `db/init`
-ne rejouent qu'à la création du volume Postgres. C'est sans conséquence
-aujourd'hui, la base ne contenant aucune donnée produite par un humain. Ce ne
-sera plus vrai dès que la revue humaine existera : les corrections de sections
-seront alors une donnée irremplaçable, et il faudra un vrai mécanisme de
-migration plutôt qu'une remise à zéro.
+### Les migrations
+
+Le schéma est géré par des migrations numérotées, dans `db/migrations`,
+appliquées au démarrage de l'API et du worker et enregistrées dans une table
+`schema_migrations`. Sur un volume vierge elles s'appliquent toutes d'affilée ;
+sur une base existante, seules les nouvelles. Un verrou consultatif Postgres
+empêche les deux services de les appliquer en même temps.
+
+**Une migration appliquée est immuable.** Depuis que la base contient des
+corrections humaines, `npm run reset` n'est plus une réponse acceptable à un
+changement de schéma. Une correction passe par une migration supplémentaire,
+jamais par la réécriture d'un fichier existant : la base d'un autre poste ne
+rejouerait pas la modification.
+
+`npm run reset` reste utile pour rejouer une démonstration à froid, mais c'est
+désormais un outil de démonstration, pas de développement.
 
 ### Tests
 
@@ -196,6 +206,28 @@ page 3, qui n'a ni en-tête ni grille autour d'elle.
 Huit choix demandent une explication, parce qu'ils ne vont pas de soi et qu'on
 peut légitimement en attendre l'inverse. Plusieurs viennent d'une erreur
 constatée en exécutant le système sur les dix avis, pas d'une intuition.
+
+### Une correction humaine est réutilisée comme modèle de forme, jamais de contenu
+
+Quand un relecteur réécrit une section, sa correction est réinjectée à deux
+niveaux : dans le contexte des sections suivantes du même mémoire, et dans les
+traitements suivants, où la dernière correction portant sur une section du même
+titre est fournie en exemple.
+
+Le danger est évident dès qu'on l'énonce. Une correction rédigée pour un marché
+d'audit de sécurité contient des faits propres à ce marché : un client, un
+périmètre, des montants, des durées. Réinjectée telle quelle dans un marché de
+maintenance applicative, elle y ferait migrer des affirmations fausses, et elle
+le ferait d'autant plus facilement qu'elle est de bonne qualité, puisqu'elle a
+été écrite par un humain.
+
+Deux mesures, dont une purement mécanique. La consigne dit explicitement de
+reprendre la forme, le niveau d'exigence et le vocabulaire, et de ne reprendre
+aucun fait. Et surtout, **les nombres de la correction sont retirés avant qu'elle
+n'entre dans le prompt**, par la même fonction que celle appliquée aux extraits
+de style. Un montant ne peut donc pas voyager d'un marché à l'autre, quelle que
+soit la docilité du modèle. Le contrôle des nombres s'appliquerait de toute
+façon derrière, et rejetterait la section.
 
 ### Aucun nombre inventé, ni en chiffres ni en toutes lettres
 

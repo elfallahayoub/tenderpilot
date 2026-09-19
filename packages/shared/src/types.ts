@@ -156,6 +156,13 @@ export type AgentEvent = {
  */
 export const PREFIXE_ETAPE_OCR = "OCR page ";
 
+/**
+ * Agent des evenements produits par une personne, non par le systeme.
+ * Le panneau du journal les distingue visuellement : c est la boucle
+ * humain-machine rendue visible.
+ */
+export const AGENT_HUMAIN = "humain";
+
 /** Libelle affiche a la place du modele quand l'etape est du code pur. */
 export const LIBELLE_CODE_SEUL = "code seul";
 

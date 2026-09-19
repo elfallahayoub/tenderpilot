@@ -7,6 +7,7 @@ import { routesExigences } from "./routes/exigences.js";
 import { routesJournal } from "./routes/journal.js";
 import { routesMemoire } from "./routes/memoire.js";
 import { fermerPostgres } from "./shared/db.js";
+import { appliquerMigrations } from "./shared/migrations.js";
 import { fermerRedis } from "./redis.js";
 import { fermerFile } from "./queue.js";
 import { TAILLE_MAX_OCTETS } from "./stockage.js";
@@ -19,6 +20,15 @@ const app = Fastify({
     transport: undefined,
   },
 });
+
+// Le schema est mis a niveau avant d'ouvrir le port. Mieux vaut un demarrage
+// qui echoue bruyamment qu'une api qui sert des donnees sur un schema incomplet.
+const migrations = await appliquerMigrations();
+app.log.info(
+  migrations.appliquees.length === 0
+    ? `schema a jour, ${migrations.dejaAppliquees} migrations deja appliquees`
+    : `migrations appliquees : ${migrations.appliquees.join(", ")}`,
+);
 
 // L'interface est servie par Vite sur un autre port : elle appelle l'API
 // en direct, donc CORS est necessaire en developpement.

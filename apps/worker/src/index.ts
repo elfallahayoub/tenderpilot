@@ -13,6 +13,7 @@ import {
 } from "./files.js";
 import { fermerCache } from "./cache.js";
 import { fermerPostgres } from "./shared/db.js";
+import { appliquerMigrations } from "./shared/migrations.js";
 import { fermerLlm } from "./shared/llm.js";
 
 /**
@@ -117,5 +118,14 @@ async function arreter(signal: string): Promise<void> {
 for (const signal of ["SIGTERM", "SIGINT"] as const) {
   process.on(signal, () => void arreter(signal));
 }
+
+// Le verrou consultatif evite que l'api et le worker appliquent la meme
+// migration en meme temps : le second attend, puis ne trouve rien a faire.
+const migrations = await appliquerMigrations();
+console.log(
+  migrations.appliquees.length === 0
+    ? `[worker] schema a jour, ${migrations.dejaAppliquees} migrations deja appliquees`
+    : `[worker] migrations appliquees : ${migrations.appliquees.join(", ")}`,
+);
 
 console.log("[worker] demarrage");

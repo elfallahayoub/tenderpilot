@@ -2,6 +2,8 @@ import type { FastifyInstance } from "fastify";
 import { Document, HeadingLevel, Packer, Paragraph, TextRun } from "docx";
 import { pool } from "../shared/db.js";
 import { fileRedaction } from "../queue.js";
+import { journaliser } from "../shared/journal.js";
+import { AGENT_HUMAIN } from "../shared/types.js";
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -11,6 +13,9 @@ type LigneSection = {
   contenu: string;
   statut: "redigee" | "a_completer";
   motif: string | null;
+  contenu_humain: string | null;
+  statut_revue: "a_revoir" | "validee" | "corrigee";
+  revue_le: string | null;
   references_citees: string[];
   modele: string | null;
   tokens: number | null;
@@ -79,7 +84,11 @@ export async function routesMemoire(app: FastifyInstance): Promise<void> {
     }
 
     const sections = await pool.query<LigneSection>(
-      `SELECT ordre, titre, contenu, statut, motif, references_citees, modele, tokens, tentatives
+      `SELECT ordre, titre,
+              -- Le contenu effectif est celui de l humain quand il existe.
+              COALESCE(contenu_humain, contenu) AS contenu,
+              contenu_humain, statut_revue, revue_le,
+              statut, motif, references_citees, modele, tokens, tentatives
          FROM sections_memoire WHERE document_id = $1 ORDER BY ordre`,
       [id],
     );
@@ -90,6 +99,110 @@ export async function routesMemoire(app: FastifyInstance): Promise<void> {
       sections: sections.rows,
     };
   });
+
+  /**
+   * Revue humaine d'une section : validation telle quelle, ou correction.
+   *
+   * Les deux actions protegent la section : une regeneration globale ne la
+   * reecrira plus. Seul le bouton de regeneration de CETTE section, ci-dessous,
+   * peut ecraser du travail humain, et il faut le demander.
+   */
+  app.put<{
+    Params: { id: string; ordre: string };
+    Body: { action: "valider" | "corriger"; contenu?: string };
+  }>("/documents/:id/sections/:ordre", async (requete, reponse) => {
+    const { id, ordre } = requete.params;
+    const numero = Number(ordre);
+    if (!UUID.test(id) || !Number.isInteger(numero)) {
+      return reponse.code(400).send({ erreur: "identifiant ou numero de section invalide" });
+    }
+
+    const { action, contenu } = requete.body ?? { action: "valider" };
+    if (action !== "valider" && action !== "corriger") {
+      return reponse.code(400).send({ erreur: "action inconnue" });
+    }
+    if (action === "corriger" && (typeof contenu !== "string" || contenu.trim().length === 0)) {
+      return reponse.code(400).send({ erreur: "une correction ne peut pas etre vide" });
+    }
+
+    const misAJour = await pool.query<{ titre: string }>(
+      action === "valider"
+        ? `UPDATE sections_memoire
+              SET statut_revue = 'validee', revue_le = now()
+            WHERE document_id = $1 AND ordre = $2
+            RETURNING titre`
+        : `UPDATE sections_memoire
+              SET contenu_humain = $3, statut_revue = 'corrigee', revue_le = now()
+            WHERE document_id = $1 AND ordre = $2
+            RETURNING titre`,
+      action === "valider" ? [id, numero] : [id, numero, contenu!.trim()],
+    );
+
+    const section = misAJour.rows[0];
+    if (!section) {
+      return reponse.code(404).send({ erreur: "section introuvable" });
+    }
+
+    // L'intervention humaine entre dans le journal au meme titre que les
+    // etapes automatiques : la boucle humain-machine doit se voir.
+    await journaliserIntervention(
+      id,
+      action === "valider" ? `validation : ${section.titre}` : `correction : ${section.titre}`,
+      action === "valider"
+        ? "section relue et validee telle quelle. Elle ne sera plus reecrite par une regeneration."
+        : `section reecrite par l'humain, ${contenu!.trim().length} caracteres. ` +
+          "Elle sera reinjectee dans le contexte des sections suivantes et des traitements suivants.",
+    );
+
+    return { statut: action === "valider" ? "validee" : "corrigee" };
+  });
+
+  /**
+   * Regeneration d'UNE section, y compris si elle porte du travail humain.
+   * C'est le seul chemin qui ecrase une correction, et il est explicite.
+   */
+  app.post<{ Params: { id: string; ordre: string } }>(
+    "/documents/:id/sections/:ordre/regenerer",
+    async (requete, reponse) => {
+      const { id, ordre } = requete.params;
+      const numero = Number(ordre);
+      if (!UUID.test(id) || !Number.isInteger(numero)) {
+        return reponse.code(400).send({ erreur: "identifiant ou numero de section invalide" });
+      }
+
+      const section = await pool.query<{ titre: string; statut_revue: string }>(
+        `SELECT titre, statut_revue FROM sections_memoire WHERE document_id = $1 AND ordre = $2`,
+        [id, numero],
+      );
+      if (section.rowCount === 0) {
+        return reponse.code(404).send({ erreur: "section introuvable" });
+      }
+
+      // On repasse la section en "a_revoir" et on efface la correction : le
+      // Writer ne saute que ce qui porte du travail humain.
+      await pool.query(
+        `UPDATE sections_memoire
+            SET statut_revue = 'a_revoir', contenu_humain = NULL, revue_le = NULL
+          WHERE document_id = $1 AND ordre = $2`,
+        [id, numero],
+      );
+      await pool.query(
+        `UPDATE documents SET statut_memoire = 'en_cours', motif_memoire = NULL WHERE id = $1`,
+        [id],
+      );
+      await fileRedaction.add("rediger", { documentId: id });
+
+      await journaliserIntervention(
+        id,
+        `regeneration demandee : ${section.rows[0]!.titre}`,
+        section.rows[0]!.statut_revue === "corrigee"
+          ? "l'humain demande explicitement d'ecraser sa propre correction"
+          : "l'humain demande une nouvelle redaction de cette section",
+      );
+
+      return reponse.code(202).send({ statut: "en_cours" });
+    },
+  );
 
   /** Export DOCX. Le Reporter recopie, il ne recalcule jamais. */
   app.get<{ Params: { id: string } }>("/documents/:id/memoire.docx", async (requete, reponse) => {
@@ -109,7 +222,10 @@ export async function routesMemoire(app: FastifyInstance): Promise<void> {
     }
 
     const sections = await pool.query<LigneSection>(
-      `SELECT ordre, titre, contenu, statut, motif, references_citees
+      `SELECT ordre, titre,
+              COALESCE(contenu_humain, contenu) AS contenu,
+              contenu_humain, statut_revue, revue_le,
+              statut, motif, references_citees
          FROM sections_memoire WHERE document_id = $1 ORDER BY ordre`,
       [id],
     );
@@ -129,6 +245,30 @@ export async function routesMemoire(app: FastifyInstance): Promise<void> {
       )
       .header("Content-Disposition", `attachment; filename="${nom}"`)
       .send(octets);
+  });
+}
+
+/**
+ * Une intervention humaine dans le journal d'agent.
+ *
+ * L'agent vaut "humain" et le modele est nul : ce n'est ni un appel au modele
+ * ni une etape de code, c'est une decision de la personne qui relit. Le
+ * panneau la distingue visuellement des deux autres.
+ */
+async function journaliserIntervention(
+  documentId: string,
+  etape: string,
+  detail: string,
+): Promise<void> {
+  await journaliser({
+    runId: documentId,
+    agent: AGENT_HUMAIN,
+    etape,
+    modele: null,
+    tokens: null,
+    dureeMs: 0,
+    statut: "succes",
+    detail,
   });
 }
 

@@ -22,6 +22,7 @@ export type {
 } from "./shared/types";
 
 export {
+  AGENT_HUMAIN,
   LIBELLE_CODE_SEUL,
   PREFIXE_ETAPE_OCR,
   LIBELLE_CATEGORIE,

@@ -60,6 +60,13 @@ Un raisonnement parfait qu'on ne voit pas ne rapporte rien.
    qu'aucun chiffre du verdict ne sort d'un prompt. Si la conversion échoue, le
    fait vaut `null`, la confiance est plafonnée, et rien n'est deviné.
 
+9. **Une migration appliquée est immuable.** Depuis la tranche 8, la base
+   contient du travail humain : `npm run reset` n'est plus une réponse
+   acceptable à un changement de schéma. Les fichiers de `db/migrations` sont
+   appliqués une fois, enregistrés dans `schema_migrations`, et ne sont jamais
+   réécrits. Une correction passe par une migration supplémentaire, sinon la
+   base d'un autre poste ne rejouerait pas la modification.
+
 ## 4. Stack
 
 - Interface : React 18 + TypeScript (Vite)

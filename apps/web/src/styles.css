@@ -1125,3 +1125,85 @@ body {
   color: var(--discret);
   font-style: italic;
 }
+
+/* --- intervention humaine dans le journal ---
+   Ni un appel au modele, ni du code : sa propre marque. */
+
+.modele--humain {
+  color: #1f5f8f;
+  background: #e0eefa;
+  border: 1px solid #1f5f8f;
+}
+
+.etape--humain {
+  border-left-color: #1f5f8f;
+  background: #f2f8fd;
+}
+
+.etape--humain .etape__agent {
+  color: #1f5f8f;
+}
+
+/* --- revue des sections --- */
+
+.section--validee {
+  border-left-color: var(--vert);
+}
+
+.section--corrigee {
+  border-left-color: #1f5f8f;
+  background: #f7fbfe;
+}
+
+.revue {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  border-radius: 9px;
+  padding: 1px 7px;
+}
+
+.revue--validee {
+  color: var(--vert);
+  border: 1px solid var(--vert);
+}
+
+.revue--corrigee {
+  color: #1f5f8f;
+  border: 1px solid #1f5f8f;
+}
+
+.section__edition {
+  width: 100%;
+  font: inherit;
+  font-size: 14px;
+  line-height: 1.6;
+  padding: 10px 12px;
+  border: 1px solid var(--trait);
+  border-radius: 6px;
+  resize: vertical;
+}
+
+.section__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.bouton-discret {
+  font: inherit;
+  font-size: 13px;
+  padding: 6px 12px;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  background: none;
+  color: var(--discret);
+  cursor: pointer;
+}
+
+.bouton-discret:hover {
+  border-color: var(--trait);
+  color: var(--texte);
+}

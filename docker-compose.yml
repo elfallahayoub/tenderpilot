@@ -9,7 +9,6 @@ services:
       - "5432:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
-      - ./db/init:/docker-entrypoint-initdb.d:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
       interval: 5s
@@ -39,6 +38,7 @@ services:
     volumes:
       - ./apps/api/src:/app/src
       - ./packages/shared/src:/app/src/shared
+      - ./db/migrations:/app/migrations:ro
       - televersements:/app/televersements
       - ./apps/api/tsconfig.json:/app/tsconfig.json:ro
     depends_on:
@@ -54,6 +54,7 @@ services:
     volumes:
       - ./apps/worker/src:/app/src
       - ./packages/shared/src:/app/src/shared
+      - ./db/migrations:/app/migrations:ro
       - televersements:/app/televersements:ro
       - ./data:/app/data:ro
       - ./apps/worker/tsconfig.json:/app/tsconfig.json:ro
